@@ -1,10 +1,12 @@
 const express = require('express');
+
+const cors = require('cors')
 const app = express();
-const port = 3000;
+const port = 3030;
 
 // Middleware для парсинга JSON
 app.use(express.json());
-
+app.use(cors())
 // Простой маршрут по умолчанию
 app.get('/', (req, res) => {
     res.send('Привет, мир!');
