@@ -1,4 +1,4 @@
-import { ApplicationSingletoneFacade } from './app/core/ApplicationServerFacade'
+import { ApplicationSingletoneFacade } from './core/src/ApplicationServerFacade'
 
 console.log('starting the server...')
 

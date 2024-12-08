@@ -1,4 +1,4 @@
-import { IPerson, OrdinaryPerson, Person } from '../src/person/Person'
+import { IPerson, OrdinaryPerson } from '../person/Person'
 import { Factory } from './AbstractFactory'
 
 export abstract class PersonFactory extends Factory<IPerson> {

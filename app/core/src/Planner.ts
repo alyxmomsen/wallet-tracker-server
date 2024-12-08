@@ -1,4 +1,4 @@
-import { IPerson } from './src/person/Person'
+import { IPerson } from './person/Person'
 import { IRequirementCommand } from './RequirementCommand'
 
 import { ITask, RequirementTask } from './Task'

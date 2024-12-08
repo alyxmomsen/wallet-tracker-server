@@ -1,6 +1,5 @@
-import { networkInterfaces } from 'os'
-import { IWallet, Wallet } from '../../Wallet'
-import { IRequirementCommand } from '../../RequirementCommand'
+import { IRequirementCommand } from '../RequirementCommand'
+import { IWallet, Wallet } from '../Wallet'
 import { GoingSleepStatus, IPersonStatusSystem } from './PersonStatus'
 
 export type TStatus = {

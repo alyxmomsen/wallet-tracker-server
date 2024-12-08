@@ -1,4 +1,4 @@
-import { IPerson } from './src/person/Person'
+import { IPerson } from './person/Person'
 
 export interface IRequirementCommand {
     execute(person: IPerson): boolean

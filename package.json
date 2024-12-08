@@ -6,7 +6,8 @@
         "pretty": "npx prettier --write .",
         "pretty-cmt": "npx prettier --write . && git add . && git commit -m 'update' && git status",
         "pretty-cmt-push": "npx prettier --write .",
-        "compile": "npx tsc"
+        "compile": "npx tsc",
+        "serve": "npx tsc && node ./app/web-server/express.js"
     },
     "keywords": [],
     "author": "",
@@ -14,12 +15,14 @@
     "description": "",
     "dependencies": {
         "@types/express": "^5.0.0",
+        "body-parser": "^1.15.0",
         "cors": "^2.8.5",
         "express": "^4.21.2",
         "firebase": "^11.0.2"
     },
     "devDependencies": {
         "@types/node": "^22.10.1",
+        "prettier": "3.4.2",
         "ts-node": "^10.9.2",
         "typescript": "^5.7.2"
     }
