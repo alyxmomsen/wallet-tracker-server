@@ -5,7 +5,8 @@
     "scripts": {
         "pretty": "npx prettier --write .",
         "pretty-cmt": "npx prettier --write . && git add . && git commit -m 'update' && git status",
-        "pretty-cmt-push": "npx prettier --write ."
+        "pretty-cmt-push": "npx prettier --write .",
+        "compile": "npx tsc"
     },
     "keywords": [],
     "author": "",
