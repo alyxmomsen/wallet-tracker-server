@@ -1,37 +1,45 @@
-import { IPerson, OrdinaryPerson } from '../core/src/person/Person'
+import { addPersonIntoFireStore, checkRecordExistsByField } from './firebase'
 
-export class MyDataBase {
-    protected persons: Map<number, IPerson>
-    protected userNames: Map<number, string>
-    protected userPasswords: Map<number, string>
+export interface IDataBaseMediator<T> {
+    addPerson(username: string, password: string): T
+}
 
-    addPerson(person: IPerson) {
-        let maxIdValue = 0
-        const mapiterator = this.persons.keys()
-        for (const key of mapiterator) {
-            if (maxIdValue < key) {
-                maxIdValue = key
+export type TDatabaseResultStatus = {
+    statusCode: number
+    details: string
+    status: boolean
+    userId: string
+}
+
+export class DataBaseMediator
+    implements IDataBaseMediator<Promise<TDatabaseResultStatus>>
+{
+    async addPerson(
+        username: string,
+        password: string
+    ): Promise<TDatabaseResultStatus> {
+        const result = await checkRecordExistsByField(username, password)
+
+        if (result) {
+            return {
+                statusCode: 400,
+                details: 'user already exists',
+                status: false,
+                userId: '',
             }
         }
 
-        const newId = maxIdValue + 1
+        const docRef = await addPersonIntoFireStore(username, password)
 
-        this.persons.set(newId, person)
-        // console.log(newId);
-        return newId
+        const { id } = docRef
+
+        return {
+            statusCode: 200,
+            details: 'user created',
+            status: true,
+            userId: id,
+        }
     }
 
-    addUsername(userId: number, name: string) {
-        this.userNames.set(userId, name)
-    }
-
-    addUserPassword(userId: number, password: string) {
-        this.userPasswords.set(userId, password)
-    }
-
-    constructor() {
-        this.persons = new Map<number, IPerson>()
-        this.userNames = new Map<number, string>()
-        this.userPasswords = new Map<number, string>()
-    }
+    constructor() {}
 }

@@ -2,7 +2,7 @@
 // import { MyDataBase } from "./core";
 
 import { DocumentData, DocumentReference } from 'firebase/firestore'
-import { addPerson } from './firebase'
+import { addPersonIntoFireStore } from './firebase'
 
 // const db = new MyDataBase();
 
@@ -43,7 +43,7 @@ export class FireBaseAddPersonBehavior extends IAddPersonBehavior<
         username: string,
         password: string
     ): Promise<DocumentReference<DocumentData, DocumentData>> {
-        const docRef = await addPerson(username, password)
+        const docRef = await addPersonIntoFireStore(username, password)
 
         return docRef
     }

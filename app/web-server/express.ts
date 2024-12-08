@@ -1,6 +1,10 @@
 import { Request, Response } from 'express'
 import { app, dataBaseDriver } from '..'
-import { addPerson, checkRecordExistsByField } from '../db/firebase'
+import {
+    addPersonIntoFireStore,
+    checkRecordExistsByField,
+} from '../db/firebase'
+import { TDatabaseResultStatus } from '../db/core'
 
 const bodyParser = require('body-parser')
 const express = require('express')
@@ -62,11 +66,20 @@ webApp.post('/auth', async (req: Request, res: Response) => {
         })
     }
 
-    console.log({ body })
+    const {
+        username: login,
+        password: pass,
+    }: { username: string; password: string } = documentData as {
+        username: string
+        password: string
+    }
 
+    // app.addPerson();
+
+    console.log({ body, documentData, login, pass })
     res.status(200).json({
         details: 'authorized',
-        username,
+        username: login,
     })
 })
 
@@ -90,23 +103,24 @@ webApp.post('/registration', async (req: Request, res: Response) => {
 
     console.log({ body })
 
-    const result = await checkRecordExistsByField(username, password)
-
-    if (result) {
-        return res.status(400).json({
-            details: 'user exists',
-        })
-    }
-
-    const docRef = await addPerson(username, password)
-
-    const { id } = docRef
-
-    res.status(200).json({
-        details: 'OK',
-        result,
-        id,
-    })
+    return app.addPerson(
+        username,
+        password,
+        (databaseResulStatus: TDatabaseResultStatus) => {
+            if (databaseResulStatus.status) {
+                res.status(200).json({
+                    status: databaseResulStatus.statusCode,
+                    details: databaseResulStatus.details,
+                    userId: databaseResulStatus.userId,
+                })
+            } else {
+                res.status(400).json({
+                    status: databaseResulStatus.statusCode,
+                    details: databaseResulStatus.details,
+                })
+            }
+        }
+    )
 })
 
 // Пример маршрута с параметрами

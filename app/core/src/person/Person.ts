@@ -33,7 +33,7 @@ export interface IPerson {
 }
 
 export abstract class Person implements IPerson {
-    // private id: number;
+    private id: string
     protected name: string
     protected wallet: IWallet
     protected requirementCommands: IRequirementCommand[]
@@ -134,18 +134,19 @@ export abstract class Person implements IPerson {
         })
     }
 
-    constructor(wallet: IWallet, name: string) {
+    constructor(wallet: IWallet, name: string, userId: string) {
         this.wallet = wallet
         this.name = name
         this.requirementCommands = []
         this.averageSpending = 700
         this.status = new GoingSleepStatus()
+        this.id = userId
     }
 }
 
 export class OrdinaryPerson extends Person {
-    constructor(name: string, walletInitValue: number) {
-        super(new Wallet(walletInitValue), name)
+    constructor(name: string, walletInitValue: number, userId: string) {
+        super(new Wallet(walletInitValue), name, userId)
     }
 }
 

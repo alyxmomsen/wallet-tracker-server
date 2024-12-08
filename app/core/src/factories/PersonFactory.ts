@@ -1,16 +1,18 @@
+import { checkRecordExistsByField } from '../../../db/firebase'
 import { IPerson, OrdinaryPerson } from '../person/Person'
-import { Factory } from './AbstractFactory'
 
-export abstract class PersonFactory extends Factory<IPerson> {
-    abstract create(name: string, walletInitValue: number): IPerson
+export interface IPersonFactory {
+    create(username: string, userId: string): IPerson
+}
 
-    constructor() {
-        super()
+export abstract class PersonFactory implements IPersonFactory {
+    create(username: string, userId: string) {
+        return new OrdinaryPerson(username, 0, userId)
     }
 }
 
-export class PlayerPersonFactory extends PersonFactory {
-    create(name: string, walletInitValue: number): IPerson {
-        return new OrdinaryPerson(name, walletInitValue)
+export class UserPersonFactory extends PersonFactory {
+    constructor() {
+        super()
     }
 }

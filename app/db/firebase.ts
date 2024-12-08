@@ -32,10 +32,14 @@ const app = initializeApp(firebaseConfig)
 
 const db = getFirestore(app)
 
-export async function addPerson(username: string, password: string) {
+export async function addPersonIntoFireStore(
+    username: string,
+    password: string
+) {
     const docRef = await addDoc(collection(db, 'persons'), {
         username,
         password,
+        unixDate: Date.now(),
     })
     console.log('end the function', docRef)
 

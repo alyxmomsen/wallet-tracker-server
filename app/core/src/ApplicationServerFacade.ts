@@ -1,9 +1,23 @@
+import {
+    DataBaseMediator,
+    IDataBaseMediator,
+    TDatabaseResultStatus,
+} from '../../db/core'
+import {
+    IPersonFactory,
+    PersonFactory,
+    UserPersonFactory,
+} from './factories/PersonFactory'
 import { IPerson } from './person/Person'
 import { IRequirementCommand } from './RequirementCommand'
 import { ITask } from './Task'
 
 export interface IApplicationSingletoneFacade {
-    addPerson(person: IPerson): number
+    addPerson(
+        username: string,
+        password: string,
+        dataBaseCallBack: (status: TDatabaseResultStatus) => void
+    ): number
     getPersons(): IPerson[]
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>): void
     update(): void
@@ -12,9 +26,11 @@ export interface IApplicationSingletoneFacade {
 export class ApplicationSingletoneFacade
     implements IApplicationSingletoneFacade
 {
-    private persons: IPerson[]
+    private users: IPerson[]
     private requirements: IRequirementCommand[]
     private static instance: ApplicationSingletoneFacade | null = null
+    private dataBaseMediator: IDataBaseMediator<Promise<TDatabaseResultStatus>>
+    private personFactory: IPersonFactory
 
     static Instance() {
         if (ApplicationSingletoneFacade.instance === null) {
@@ -28,20 +44,39 @@ export class ApplicationSingletoneFacade
 
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>) {}
 
-    addPerson(person: IPerson): number {
-        this.persons.push(person)
+    addPerson(
+        username: string,
+        password: string,
+        dataBaseCallBack: (databaseResulStatus: TDatabaseResultStatus) => void
+    ): number {
+        this.dataBaseMediator.addPerson(username, password).then((data) => {
+            const { details, statusCode, status, userId } = data
+
+            if (status) {
+                this.personFactory.create(username, userId)
+            }
+
+            dataBaseCallBack({
+                statusCode,
+                details,
+                status,
+                userId,
+            })
+        })
 
         return 0
     }
 
     getPersons() {
-        return this.persons
+        return this.users
     }
 
     update() {}
 
     /* private  */ constructor() {
+        this.dataBaseMediator = new DataBaseMediator()
         this.requirements = []
-        this.persons = []
+        this.users = []
+        this.personFactory = new UserPersonFactory()
     }
 }
