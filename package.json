@@ -1,22 +1,25 @@
 {
-  "name": "the-person-server",
-  "version": "1.0.0",
-  "main": "server.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.21.2"
-  },
-  "devDependencies": {
-    "@types/node": "^22.10.1",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.7.2"
-  }
+    "name": "the-person-server",
+    "version": "1.0.0",
+    "main": "server.js",
+    "scripts": {
+        "pretty": "npx prettier --write .",
+        "pretty-cmt": "npx prettier --write . && git add . && git commit -m 'update' && git status",
+        "pretty-cmt-push": "npx prettier --write ."
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+        "@types/express": "^5.0.0",
+        "cors": "^2.8.5",
+        "express": "^4.21.2",
+        "firebase": "^11.0.2"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.1",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.7.2"
+    }
 }
