@@ -53,7 +53,7 @@ export class ApplicationSingletoneFacade
             const { details, statusCode, status, userId } = data
 
             if (status) {
-                this.personFactory.create(username, userId)
+                this.users.push(this.personFactory.create(username, userId))
             }
 
             dataBaseCallBack({
