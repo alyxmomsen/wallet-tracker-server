@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { app, dataBaseDriver } from '../..'
+import { app, dataBaseDriver } from '..'
 
 const express = require('express')
 
