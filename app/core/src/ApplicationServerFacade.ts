@@ -3,11 +3,7 @@ import {
     IDataBaseMediator,
     TDatabaseResultStatus,
 } from '../../db/core'
-import {
-    IPersonFactory,
-    PersonFactory,
-    UserPersonFactory,
-} from './factories/PersonFactory'
+import { IPersonFactory, UserPersonFactory } from './factories/PersonFactory'
 import { IPerson } from './person/Person'
 import { IRequirementCommand } from './RequirementCommand'
 import { ITask } from './Task'
@@ -29,7 +25,7 @@ export class ApplicationSingletoneFacade
     private users: IPerson[]
     private requirements: IRequirementCommand[]
     private static instance: ApplicationSingletoneFacade | null = null
-    private dataBaseMediator: IDataBaseMediator<Promise<TDatabaseResultStatus>>
+    private dataBaseMediator: IDataBaseMediator
     private personFactory: IPersonFactory
 
     static Instance() {
@@ -54,6 +50,7 @@ export class ApplicationSingletoneFacade
 
             if (status) {
                 this.users.push(this.personFactory.create(username, userId))
+                console.log({ persons: this.users })
             }
 
             dataBaseCallBack({
@@ -73,8 +70,22 @@ export class ApplicationSingletoneFacade
 
     update() {}
 
-    /* private  */ constructor() {
+    private constructor() {
         this.dataBaseMediator = new DataBaseMediator()
+
+        // getAllFireStoreDocs('persons');
+
+        this.dataBaseMediator.getPersons().then((response) => {
+            response.forEach((elem) => {
+                const data = elem.data()
+
+                this.users.push(
+                    this.personFactory.create(data.username, data.userId)
+                )
+            })
+            console.log({ users: this.users })
+        })
+
         this.requirements = []
         this.users = []
         this.personFactory = new UserPersonFactory()

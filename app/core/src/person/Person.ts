@@ -138,7 +138,7 @@ export abstract class Person implements IPerson {
         this.wallet = wallet
         this.name = name
         this.requirementCommands = []
-        this.averageSpending = 700
+        this.averageSpending = 0
         this.status = new GoingSleepStatus()
         this.id = userId
     }

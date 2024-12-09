@@ -4,4 +4,4 @@ import { WebServerDriver } from './web-server/app'
 
 export const webserverDriver = new WebServerDriver()
 export const dataBaseDriver = new DataBaseDriver()
-export const app = new ApplicationSingletoneFacade()
+export const app = ApplicationSingletoneFacade.Instance()

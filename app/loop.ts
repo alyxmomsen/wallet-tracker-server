@@ -1,33 +1,14 @@
-import { ApplicationSingletoneFacade } from './core/src/ApplicationServerFacade'
-
 console.log('starting the server...')
-
-const application = new ApplicationSingletoneFacade()
-
-const persons = application.getPersons()
-
-console.log({ persons })
 
 let isRunning = true
 
 async function runContinuousTask() {
-    console.log('starting loop...')
-
-    const started = Date.now()
-
-    console.log('started in ' + started)
+    console.log('looper started')
 
     while (isRunning) {
-        const now = Date.now()
-
-        if (now - started > 3000) {
-            isRunning = false
-            break
-        }
-
-        // console.log('Задача выполняется...');
+        console.log('Задача выполняется...')
         // Здесь можно выполнить асинхронные операции, например, запросы к базе данных
-        await new Promise((resolve) => setTimeout(resolve, 1000 / 60)) // Задержка в 5 секунд
+        await new Promise((resolve) => setTimeout(resolve, 1000 / 60)) // Задержка в 60 милисекунд
     }
 
     console.log('loop stoped')

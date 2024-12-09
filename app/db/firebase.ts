@@ -12,7 +12,10 @@ import {
     query,
     getDocs,
     DocumentData,
+    QuerySnapshot,
+    QueryDocumentSnapshot,
 } from 'firebase/firestore'
+import { snapshot } from 'node:test'
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -41,7 +44,7 @@ export async function addPersonIntoFireStore(
         password,
         unixDate: Date.now(),
     })
-    console.log('end the function', docRef)
+    console.log('end the function')
 
     return docRef
 }
@@ -62,25 +65,43 @@ async function checkRecordExists(recordId: string) {
 export async function checkRecordExistsByField(
     username: string,
     password: string
-): Promise<DocumentData | null> {
-    const q = query(
+): Promise<QueryDocumentSnapshot<DocumentData, DocumentData>[]> {
+    const qwery = query(
         collection(db, 'persons'),
         where('username', '==', username),
         where('password', '==', password),
         limit(1)
     )
 
-    const querySnapshot = await getDocs(q)
+    const querySnapshot = await getDocs(qwery)
 
     if (querySnapshot.empty) {
         console.log('Запись не существует.')
-        return null
+        return []
     } else {
         console.log('Запись существует!')
         // Здесь вы можете получить данные из записи, если нужно
-        const data = querySnapshot.docs[0].data()
-        return data
+        const docs = querySnapshot.docs
+        // querySnapshot.
+        // docs.forEach(e => e.)
+        return docs
     }
+}
+
+export async function getAllFireStoreDocs(collectionName: string) {
+    const qwery = query(
+        collection(db, 'persons')
+        // where('username', '==', username),
+        // where('password', '==', password),
+        // limit(1)
+    )
+
+    const querySnapshot = await getDocs(qwery)
+
+    if (!querySnapshot.empty) {
+        console.log(querySnapshot.docs.length)
+    }
+    return querySnapshot.docs
 }
 
 // Пример использования

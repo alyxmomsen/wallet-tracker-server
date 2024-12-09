@@ -28,7 +28,7 @@ webApp.get('/', async (req: Request, res: Response) => {
 
     const body = req
 
-    console.log({ body })
+    // console.log({ body })
 
     const docRef = await dataBaseDriver.addPerson(
         'hello' + Date.now(),
@@ -60,26 +60,19 @@ webApp.post('/auth', async (req: Request, res: Response) => {
 
     const documentData = await checkRecordExistsByField(username, password)
 
-    if (documentData === null) {
+    if (!documentData.length) {
         return res.status(400).json({
             details: 'user is not exists',
         })
     }
 
-    const {
-        username: login,
-        password: pass,
-    }: { username: string; password: string } = documentData as {
-        username: string
-        password: string
-    }
+    documentData.forEach((e) => console.log(e.id))
 
-    // app.addPerson();
-
-    console.log({ body, documentData, login, pass })
+    // console.log({ body, documentData, login, pass })
     res.status(200).json({
         details: 'authorized',
-        username: login,
+        username: 'login',
+        userId: 'id',
     })
 })
 

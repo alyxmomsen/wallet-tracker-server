@@ -1,7 +1,16 @@
-import { addPersonIntoFireStore, checkRecordExistsByField } from './firebase'
+import { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore'
+import {
+    addPersonIntoFireStore,
+    checkRecordExistsByField,
+    getAllFireStoreDocs,
+} from './firebase'
 
-export interface IDataBaseMediator<T> {
-    addPerson(username: string, password: string): T
+export interface IDataBaseMediator {
+    addPerson(
+        username: string,
+        password: string
+    ): Promise<TDatabaseResultStatus>
+    getPersons(): Promise<QueryDocumentSnapshot<DocumentData, DocumentData>[]>
 }
 
 export type TDatabaseResultStatus = {
@@ -11,16 +20,14 @@ export type TDatabaseResultStatus = {
     userId: string
 }
 
-export class DataBaseMediator
-    implements IDataBaseMediator<Promise<TDatabaseResultStatus>>
-{
+export class DataBaseMediator implements IDataBaseMediator {
     async addPerson(
         username: string,
         password: string
     ): Promise<TDatabaseResultStatus> {
         const result = await checkRecordExistsByField(username, password)
 
-        if (result) {
+        if (result.length) {
             return {
                 statusCode: 400,
                 details: 'user already exists',
@@ -39,6 +46,10 @@ export class DataBaseMediator
             status: true,
             userId: id,
         }
+    }
+
+    async getPersons() {
+        return await getAllFireStoreDocs('persons')
     }
 
     constructor() {}
