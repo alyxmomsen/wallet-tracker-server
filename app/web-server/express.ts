@@ -94,26 +94,15 @@ webApp.post('/registration', async (req: Request, res: Response) => {
         })
     }
 
-    console.log({ body })
+    // console.log({ body })
+    // console.log('chek');
 
-    return app.addPerson(
-        username,
-        password,
-        (databaseResulStatus: TDatabaseResultStatus) => {
-            if (databaseResulStatus.status) {
-                res.status(200).json({
-                    status: databaseResulStatus.statusCode,
-                    details: databaseResulStatus.details,
-                    userId: databaseResulStatus.userId,
-                })
-            } else {
-                res.status(400).json({
-                    status: databaseResulStatus.statusCode,
-                    details: databaseResulStatus.details,
-                })
-            }
-        }
-    )
+    const { statusCode, details } = await app.addPersonAsync(username, password)
+
+    return res.status(200).json({
+        status: statusCode,
+        details,
+    })
 })
 
 // Пример маршрута с параметрами
@@ -139,3 +128,24 @@ webApp.listen(port, () => {
 // class
 
 export default webApp
+
+function bodyValidator(req: Request) {
+    // const { body }: { body: IBody | undefined } = req
+
+    // if (!body) {
+    //     return res.status(400).json({
+    //         details: 'no body',
+    //     })
+    // }
+
+    // const { username, password } = body
+
+    // if (username === undefined || password === undefined) {
+    //     console.log({ body })
+    //     return res.status(400).json({
+    //         details: 'no username or no password',
+    //     })
+    // }
+
+    return false
+}

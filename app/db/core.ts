@@ -5,34 +5,40 @@ import {
     getAllFireStoreDocs,
 } from './firebase'
 
-export interface IDataBaseMediator {
-    addPerson(
+export interface IDataBaseConnector {
+    addPersonAsync(
         username: string,
         password: string
-    ): Promise<TDatabaseResultStatus>
+    ): Promise<{
+        status: boolean
+        details: string
+        id: string
+    }>
     getPersons(): Promise<QueryDocumentSnapshot<DocumentData, DocumentData>[]>
 }
 
 export type TDatabaseResultStatus = {
     statusCode: number
     details: string
-    status: boolean
-    userId: string
+    // userId: string
 }
 
-export class DataBaseMediator implements IDataBaseMediator {
-    async addPerson(
+export class DataBaseConnector implements IDataBaseConnector {
+    async addPersonAsync(
         username: string,
         password: string
-    ): Promise<TDatabaseResultStatus> {
+    ): Promise<{
+        status: boolean
+        details: string
+        id: string
+    }> {
         const result = await checkRecordExistsByField(username, password)
 
         if (result.length) {
             return {
-                statusCode: 400,
-                details: 'user already exists',
                 status: false,
-                userId: '',
+                details: 'user already exists',
+                id: '',
             }
         }
 
@@ -41,10 +47,9 @@ export class DataBaseMediator implements IDataBaseMediator {
         const { id } = docRef
 
         return {
-            statusCode: 200,
-            details: 'user created',
             status: true,
-            userId: id,
+            details: 'user created',
+            id,
         }
     }
 

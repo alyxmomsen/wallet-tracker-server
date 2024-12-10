@@ -1,6 +1,6 @@
 import {
-    DataBaseMediator,
-    IDataBaseMediator,
+    DataBaseConnector,
+    IDataBaseConnector,
     TDatabaseResultStatus,
 } from '../../db/core'
 import { IPersonFactory, UserPersonFactory } from './factories/PersonFactory'
@@ -14,6 +14,10 @@ export interface IApplicationSingletoneFacade {
         password: string,
         dataBaseCallBack: (status: TDatabaseResultStatus) => void
     ): number
+    addPersonAsync(
+        username: string,
+        password: string
+    ): Promise<TDatabaseResultStatus>
     getPersons(): IPerson[]
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>): void
     update(): void
@@ -25,7 +29,7 @@ export class ApplicationSingletoneFacade
     private users: IPerson[]
     private requirements: IRequirementCommand[]
     private static instance: ApplicationSingletoneFacade | null = null
-    private dataBaseMediator: IDataBaseMediator
+    private dataBaseConnector: IDataBaseConnector
     private personFactory: IPersonFactory
 
     static Instance() {
@@ -40,28 +44,56 @@ export class ApplicationSingletoneFacade
 
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>) {}
 
-    addPerson(
-        username: string,
-        password: string,
-        dataBaseCallBack: (databaseResulStatus: TDatabaseResultStatus) => void
-    ): number {
-        this.dataBaseMediator.addPerson(username, password).then((data) => {
-            const { details, statusCode, status, userId } = data
+    addPerson(username: string, password: string): number {
+        // const newUser = this.personFactory.create(username, password , this.dataBaseConnector)
 
-            if (status) {
-                this.users.push(this.personFactory.create(username, userId))
-                console.log({ persons: this.users })
-            }
+        // this.dataBaseConnector.addPerson(username, password).then((data) => {
+        //     const { details, statusCode, status, userId } = data
 
-            dataBaseCallBack({
-                statusCode,
-                details,
-                status,
-                userId,
-            })
-        })
+        //     if (status) {
+        //         this.users.push()
+        //         console.log({ persons: this.users })
+        //     }
+
+        // dataBaseCallBack({
+        //     statusCode,
+        //     details,
+        //     status,
+        //     userId,
+        // })
+        // })
 
         return 0
+    }
+
+    async addPersonAsync(
+        username: string,
+        password: string
+    ): Promise<TDatabaseResultStatus> {
+        // const data = await this.dataBaseConnector.addPerson(username, password);
+
+        // const { details, statusCode, status, userId } = data;
+        console.log('sormorigualga')
+        const newUser = await this.personFactory.createAsync(
+            username,
+            password,
+            this.dataBaseConnector
+        )
+
+        if (newUser) {
+            this.users.push(newUser)
+            console.log({ persons: this.users })
+            return {
+                statusCode: 200,
+                details: 'user created succesfully',
+                // userId,
+            }
+        }
+
+        return {
+            statusCode: 400,
+            details: 'user not created',
+        }
     }
 
     getPersons() {
@@ -71,17 +103,34 @@ export class ApplicationSingletoneFacade
     update() {}
 
     private constructor() {
-        this.dataBaseMediator = new DataBaseMediator()
+        this.dataBaseConnector = new DataBaseConnector()
 
         // getAllFireStoreDocs('persons');
 
-        this.dataBaseMediator.getPersons().then((response) => {
+        this.dataBaseConnector.getPersons().then((response) => {
             response.forEach((elem) => {
-                const data = elem.data()
+                // elem.id
 
-                this.users.push(
-                    this.personFactory.create(data.username, data.userId)
-                )
+                const data = elem.data()
+                console.log({ data })
+
+                // this.personFactory
+
+                this.personFactory
+                    .createAsync(
+                        data.username,
+                        data.password,
+                        this.dataBaseConnector
+                    )
+                    .then((newPerson) => {
+                        console.log('checkavo', newPerson)
+                        if (newPerson) {
+                            this.users.push(newPerson)
+                        }
+                    })
+                    .catch((e) => {
+                        console.log({ e })
+                    })
             })
             console.log({ users: this.users })
         })
