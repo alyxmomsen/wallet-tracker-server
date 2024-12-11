@@ -25,11 +25,12 @@ export interface IPerson {
     getAllReauirementCommands(): IRequirementCommand[]
     getExecutedRequirementCommands(): IRequirementCommand[]
     decrementWallet(value: number): void
-    getName(): string
+    getUserName(): string
     incrementWallet(value: number): void
     getWalletTrackForActualRequirements(): TWalletTrackValue[]
     getStatusDescription(): string
     setStatus(status: IPersonStatusSystem): boolean
+    getId(): string
 }
 
 export abstract class Person implements IPerson {
@@ -42,6 +43,10 @@ export abstract class Person implements IPerson {
     // protected sleepLevel: number;
     protected averageSpending: number
     protected status: IPersonStatusSystem
+
+    getId(): string {
+        return this.id
+    }
 
     getStatusDescription(): string {
         return this.status.getDescription()
@@ -64,17 +69,12 @@ export abstract class Person implements IPerson {
                 value,
                 valueBefore,
                 valueAfter,
-                executionDate: Number.parseInt(
-                    requirement
-                        .getExecutionDate()
-                        .getTime() /* / 1000 */
-                        .toString()
-                ),
+                executionDate: requirement.getExecutionDate(),
                 transactionTypeCode: requirement.getTransactionTypeCode(),
             }
         })
     }
-    getName(): string {
+    getUserName(): string {
         return this.name
     }
 
@@ -109,7 +109,7 @@ export abstract class Person implements IPerson {
             const currDateObj = getDateUtil(new Date())
 
             const requirementDateObj = getDateUtil(
-                requirementCommand.getExecutionDate()
+                new Date(requirementCommand.getExecutionDate())
             )
 
             if (

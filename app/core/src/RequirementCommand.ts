@@ -5,7 +5,7 @@ export interface IRequirementCommand {
     getDescription(): string
     getValue(): number
     executeWithValue(value: number): number
-    getExecutionDate(): Date
+    getExecutionDate(): number
     checkIfExecuted(): boolean
     getTransactionTypeCode(): number
 }
@@ -14,7 +14,7 @@ abstract class RequirementCommand implements IRequirementCommand {
     protected title: string
     protected value: number
     protected description: string
-    protected date: Date
+    protected date: number
     protected isExecuted: boolean
     protected transactionTypeCode: number
 
@@ -30,7 +30,7 @@ abstract class RequirementCommand implements IRequirementCommand {
         return this.isExecuted
     }
 
-    getExecutionDate(): Date {
+    getExecutionDate(): number {
         return this.date
     }
 
@@ -46,7 +46,7 @@ abstract class RequirementCommand implements IRequirementCommand {
         value: number,
         title: string,
         description: string,
-        date: Date,
+        date: number,
         transactionTypeCode: number
     ) {
         this.value = value
@@ -75,8 +75,13 @@ export class IncrementMoneyRequirementCommand extends RequirementCommand {
         return value + this.value
     }
 
-    constructor(value: number, title: string, description: string, date: Date) {
-        super(value, title, description, date, 0)
+    constructor(
+        value: number,
+        title: string,
+        description: string,
+        date: number
+    ) {
+        super(value, title, description, date, 1)
     }
 }
 
@@ -105,7 +110,12 @@ export class DecrementMoneyRequirementCommand extends RequirementCommand {
         return true
     }
 
-    constructor(value: number, title: string, description: string, date: Date) {
-        super(value, title, description, date, 1)
+    constructor(
+        value: number,
+        title: string,
+        description: string,
+        date: number
+    ) {
+        super(value, title, description, date, 0)
     }
 }

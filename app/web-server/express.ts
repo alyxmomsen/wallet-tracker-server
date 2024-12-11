@@ -1,10 +1,6 @@
 import { Request, Response } from 'express'
-import { app, dataBaseDriver } from '..'
-import {
-    addPersonIntoFireStore,
-    checkRecordExistsByField,
-} from '../db/firebase'
-import { TDatabaseResultStatus } from '../db/core'
+import { dataBaseConnector, myApplication } from '..'
+import { DocumentData } from 'firebase/firestore'
 
 const bodyParser = require('body-parser')
 const express = require('express')
@@ -24,20 +20,7 @@ export interface IBody {
 
 // Простой маршрут по умолчанию
 webApp.get('/', async (req: Request, res: Response) => {
-    // new OrdinaryPerson('Nobody Person', 0);
-
-    const body = req
-
-    // console.log({ body })
-
-    const docRef = await dataBaseDriver.addPerson(
-        'hello' + Date.now(),
-        'world' + Date.now()
-    )
-    // new DataBaseDriver();
-
-    console.log('requested')
-    res.send('Привет, мир!' + ' ' + docRef.id)
+    res.send('Привет, мир!')
 })
 
 webApp.post('/auth', async (req: Request, res: Response) => {
@@ -58,17 +41,17 @@ webApp.post('/auth', async (req: Request, res: Response) => {
         })
     }
 
-    const documentData = await checkRecordExistsByField(username, password)
+    const isExists = await dataBaseConnector.checkRecordExistsByField(
+        username,
+        password
+    )
 
-    if (!documentData.length) {
+    if (!isExists) {
         return res.status(400).json({
             details: 'user is not exists',
         })
     }
 
-    documentData.forEach((e) => console.log(e.id))
-
-    // console.log({ body, documentData, login, pass })
     res.status(200).json({
         details: 'authorized',
         username: 'login',
@@ -97,12 +80,61 @@ webApp.post('/registration', async (req: Request, res: Response) => {
     // console.log({ body })
     // console.log('chek');
 
-    const { statusCode, details } = await app.addPersonAsync(username, password)
+    const { code, message: details } = await myApplication.addUserAsync(
+        username,
+        password
+    )
 
-    return res.status(200).json({
-        status: statusCode,
+    return res.status(code ? 200 : 400).json({
+        status: code,
         details,
     })
+})
+
+type TUserData = {
+    username: string
+}
+
+type TResponseJSONData = {
+    status: boolean
+    details: string
+    payload: TUserData | null
+}
+
+webApp.post('/get-user', async (req: Request, res: Response) => {
+    // while i am deveponing this the token is userId
+    const token = req.headers['x-auth']
+
+    if (typeof token !== 'string') {
+        const responseData: TResponseJSONData = {
+            status: false,
+            details: 'no token',
+            payload: null,
+        }
+
+        return res.status(300).json(responseData)
+    }
+
+    const userDocument: DocumentData | null =
+        await myApplication.getPersonByIdAsync('jW7vjyole5yNxtis70BH')
+
+    if (userDocument === null) {
+        const responseData: TResponseJSONData = {
+            status: false,
+            details: 'no user',
+            payload: null,
+        }
+
+        return res.status(300).json(responseData)
+    }
+
+    const responseData: TResponseJSONData = {
+        status: true,
+        details: 'user data',
+        payload: userDocument.username,
+    }
+
+    res.status(200).json(responseData)
 })
 
 // Пример маршрута с параметрами

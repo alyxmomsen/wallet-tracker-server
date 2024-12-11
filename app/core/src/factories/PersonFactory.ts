@@ -1,11 +1,11 @@
-import { IDataBaseConnector } from '../../../db/core'
-import { checkRecordExistsByField } from '../../../db/firebase'
+import { IDataBaseConnector } from '../../../db/app'
 import { IPerson, OrdinaryPerson } from '../person/Person'
 
 export interface IPersonFactory {
     createAsync(
         username: string,
         password: string,
+        objectsPull: IPerson[],
         dBConnector: IDataBaseConnector
     ): Promise<IPerson | null>
     // create(username:string , password);
@@ -15,18 +15,18 @@ export abstract class PersonFactory implements IPersonFactory {
     async createAsync(
         username: string,
         password: string,
+        objectsPull: IPerson[],
         dBConnector: IDataBaseConnector
     ): Promise<IPerson | null> {
-        const { status, id } = await dBConnector.addPersonAsync(
-            username,
-            password
-        )
+        // middleware
 
-        if (!status) {
-            return null
-        }
+        dBConnector.addPersonAsync(username, password)
 
-        return new OrdinaryPerson(username, 0, id)
+        // creating
+
+        const user = new OrdinaryPerson(username, 0, '')
+
+        return null
     }
 }
 
