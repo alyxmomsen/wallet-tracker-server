@@ -18,6 +18,16 @@ export interface IBody {
     password: string
 }
 
+type TUserData = {
+    userId: string
+}
+
+type TResponseJSONData = {
+    status: boolean
+    details: string
+    payload: TUserData | null
+}
+
 // Простой маршрут по умолчанию
 webApp.get('/', async (req: Request, res: Response) => {
     res.send('Привет, мир!')
@@ -41,12 +51,16 @@ webApp.post('/auth', async (req: Request, res: Response) => {
         })
     }
 
-    const isExists = await dataBaseConnector.checkRecordExistsByField(
-        username,
-        password
-    )
+    /* ============= */
 
-    if (!isExists) {
+    // const isExists = await dataBaseConnector.checkRecordExistsByField(
+    //     username,
+    //     password
+    // )
+
+    const result = await dataBaseConnector.getPersonByFields(username, password)
+
+    if (!result.status) {
         return res.status(400).json({
             details: 'user is not exists',
         })
@@ -54,8 +68,8 @@ webApp.post('/auth', async (req: Request, res: Response) => {
 
     res.status(200).json({
         details: 'authorized',
-        username: 'login',
-        userId: 'id',
+        username,
+        userId: result.userData?.id,
     })
 })
 
@@ -77,29 +91,20 @@ webApp.post('/registration', async (req: Request, res: Response) => {
         })
     }
 
-    // console.log({ body })
-    // console.log('chek');
-
-    const { code, message: details } = await myApplication.addUserAsync(
-        username,
-        password
-    )
+    const {
+        status: code,
+        message: details,
+        userData,
+    } = await myApplication.addUserAsync(username, password)
 
     return res.status(code ? 200 : 400).json({
         status: code,
         details,
-    })
+        payload: {
+            userId: userData?.id,
+        },
+    } as TResponseJSONData)
 })
-
-type TUserData = {
-    username: string
-}
-
-type TResponseJSONData = {
-    status: boolean
-    details: string
-    payload: TUserData | null
-}
 
 webApp.post('/get-user', async (req: Request, res: Response) => {
     // while i am deveponing this the token is userId
@@ -116,7 +121,7 @@ webApp.post('/get-user', async (req: Request, res: Response) => {
     }
 
     const userDocument: DocumentData | null =
-        await myApplication.getPersonByIdAsync('jW7vjyole5yNxtis70BH')
+        await myApplication.getPersonByIdAsync(token)
 
     if (userDocument === null) {
         const responseData: TResponseJSONData = {
@@ -156,8 +161,6 @@ webApp.post('/get-user', async (req: Request, res: Response) => {
 webApp.listen(port, () => {
     console.log(`Сервер запущен на http://localhost:${port}`)
 })
-
-// class
 
 export default webApp
 

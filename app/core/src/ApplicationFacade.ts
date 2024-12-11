@@ -14,7 +14,7 @@ import {
 import { ITask } from './Task'
 
 export interface IApplicationFacade {
-    addUserIntoPull(
+    addUserIntoThePool(
         username: string,
         password: string,
         userId: string
@@ -52,7 +52,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>) {}
 
-    addUserIntoPull(
+    addUserIntoThePool(
         username: string,
         password: string,
         userId: string
@@ -89,7 +89,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             const usernameOfObjectPool = userOfPool.getUserName()
             if (usernameOfObjectPool === username) {
                 return {
-                    code: false,
+                    status: false,
                     message: 'user name like the pool',
                     userData: null,
                 }
@@ -106,9 +106,11 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         if (newUser) {
             this.usersPool.push(newUser)
-            console.log({ persons: this.usersPool })
+            console.log(
+                'new user added into the pool: ' + newUser.getUserName()
+            )
             return {
-                code: true,
+                status: true,
                 message: 'user created succesfully',
                 userData: {
                     id: newUser.getId(),
@@ -117,7 +119,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         }
 
         return {
-            code: false,
+            status: false,
             message: 'user not created',
             userData: null,
         }
@@ -154,7 +156,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         )
         this.dataBaseConnector.getPersons().then((response) => {
             response.forEach((queryDocumentSnapshot) => {
-                console.log('')
                 const data = queryDocumentSnapshot.data()
                 const id = queryDocumentSnapshot.id
                 const newUser = new User(data.username, 0, id)
@@ -166,9 +167,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                             requirements.forEach((requirement) => {
                                 const directionCode =
                                     requirement.cashFlowDirectionCode
-
-                                // console.log({directionCode});
-
                                 const {
                                     value,
                                     description,

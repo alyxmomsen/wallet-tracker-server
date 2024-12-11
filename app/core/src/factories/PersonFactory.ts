@@ -20,13 +20,22 @@ export abstract class PersonFactory implements IPersonFactory {
     ): Promise<IPerson | null> {
         // middleware
 
-        dBConnector.addPersonAsync(username, password)
+        const result = await dBConnector.addPersonAsync(username, password)
 
-        // creating
+        if (!result.status) {
+            return null
+        }
 
-        const user = new OrdinaryPerson(username, 0, '')
+        const userId = result.userData?.id
 
-        return null
+        if (userId === undefined) {
+            console.log('something wrong')
+            return null
+        }
+
+        const user = new OrdinaryPerson(username, 0, userId)
+
+        return user
     }
 }
 

@@ -41,7 +41,7 @@ const db = getFirestore(app)
 /* data base connector */
 
 export type TDatabaseResultStatus = {
-    code: boolean
+    status: boolean
     message: string
     userData: {
         id: string
@@ -49,6 +49,10 @@ export type TDatabaseResultStatus = {
 }
 
 export interface IDataBaseConnector {
+    getPersonByFields(
+        username: string,
+        password: string
+    ): Promise<TDatabaseResultStatus>
     addPersonAsync(
         username: string,
         password: string
@@ -58,9 +62,64 @@ export interface IDataBaseConnector {
     getPersonById(id: string): Promise<DocumentData | null>
 }
 
+export type TDataBaseUser = {
+    createdUnixDate: number
+    password: string
+    username: string
+    userId: string
+}
+
 export class DataBaseConnector implements IDataBaseConnector {
     async getPersonById(id: string): Promise<DocumentData | null> {
         return await getPersonsByIdFireBase(id)
+    }
+
+    async getPersonByFields(
+        username: string,
+        password: string
+    ): Promise<TDatabaseResultStatus> {
+        const qwery = query(
+            collection(db, 'persons'),
+            where('username', '==', username),
+            where('password', '==', password)
+        )
+
+        const snapshots = await getDocs(qwery)
+
+        if (snapshots.empty) {
+            return {
+                message: 'no users like this',
+                status: false,
+                userData: null,
+            }
+        }
+
+        if (snapshots.size > 1) {
+            return {
+                message: 'too match , internal error',
+                status: false,
+                userData: null,
+            }
+        }
+
+        const data = (await snapshots.docs[0].data()) as Omit<
+            TDataBaseUser,
+            'userId'
+        >
+
+        const { createdUnixDate, password: pass, username: name } = data
+
+        const userId = snapshots.docs[0].id
+
+        const returnData: TDatabaseResultStatus = {
+            message: 'iser is founded',
+            status: true,
+            userData: {
+                id: userId,
+            },
+        }
+
+        return returnData
     }
 
     async checkRecordExistsByField(username: string, password: string) {
@@ -76,7 +135,7 @@ export class DataBaseConnector implements IDataBaseConnector {
 
         if (result.length) {
             return {
-                code: false,
+                status: false,
                 message: 'user already exists',
                 userData: null,
             }
@@ -87,7 +146,7 @@ export class DataBaseConnector implements IDataBaseConnector {
         const { id } = docRef
 
         return {
-            code: true,
+            status: true,
             message: 'user created',
             userData: {
                 id,
