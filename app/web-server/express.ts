@@ -1,6 +1,8 @@
 import { Request, Response } from 'express'
-import { dataBaseConnector, myApplication } from '..'
+
 import { DocumentData } from 'firebase/firestore'
+import { authService, myApplication } from '..'
+import { TDataBaseUser } from '../db/app'
 
 const bodyParser = require('body-parser')
 const express = require('express')
@@ -53,23 +55,28 @@ webApp.post('/auth', async (req: Request, res: Response) => {
 
     /* ============= */
 
-    // const isExists = await dataBaseConnector.checkRecordExistsByField(
-    //     username,
-    //     password
-    // )
+    const { userData } = await authService.authUser(username, password)
 
-    const result = await dataBaseConnector.getPersonByFields(username, password)
-
-    if (!result.status) {
+    if (!userData) {
         return res.status(400).json({
             details: 'user is not exists',
         })
     }
 
+    const data = await myApplication.getPersonByIdAsync(userData.id)
+
+    if (!data) {
+        return res.status(400).json({
+            details: 'user is not exists , sorry',
+        })
+    }
+
+    const { username: name } = data as TDataBaseUser
+
     res.status(200).json({
         details: 'authorized',
-        username,
-        userId: result.userData?.id,
+        username: name,
+        userId: userData.id,
     })
 })
 
@@ -107,7 +114,8 @@ webApp.post('/registration', async (req: Request, res: Response) => {
 })
 
 webApp.post('/get-user', async (req: Request, res: Response) => {
-    // while i am deveponing this the token is userId
+    console.log('get user')
+
     const token = req.headers['x-auth']
 
     if (typeof token !== 'string') {
@@ -133,10 +141,11 @@ webApp.post('/get-user', async (req: Request, res: Response) => {
         return res.status(300).json(responseData)
     }
 
-    const responseData: TResponseJSONData = {
+    const responseData: TResponseJSONData & { userId: string } = {
         status: true,
         details: 'user data',
         payload: userDocument.username,
+        userId: token,
     }
 
     res.status(200).json(responseData)

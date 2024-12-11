@@ -69,7 +69,16 @@ export type TDataBaseUser = {
     userId: string
 }
 
-export class DataBaseConnector implements IDataBaseConnector {
+export type TRequrementsDataBaseType = {
+    dateToExecute: number
+    description: string
+    title: string
+    userId: string
+    value: number
+    cashFlowDirectionCode: number
+}
+
+export class FirebaseConnector implements IDataBaseConnector {
     async getPersonById(id: string): Promise<DocumentData | null> {
         return await getPersonsByIdFireBase(id)
     }
@@ -165,15 +174,6 @@ export class DataBaseConnector implements IDataBaseConnector {
     }
 
     constructor() {}
-}
-
-type TRequrementsDataBaseType = {
-    dateToExecute: number
-    description: string
-    title: string
-    userId: string
-    value: number
-    cashFlowDirectionCode: number
 }
 
 async function getUserRequirementsByUserId(

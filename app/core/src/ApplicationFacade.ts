@@ -1,6 +1,6 @@
 import { DocumentData } from 'firebase/firestore'
 import {
-    DataBaseConnector,
+    FirebaseConnector,
     IDataBaseConnector,
     TDatabaseResultStatus,
 } from '../../db/app'
