@@ -4,7 +4,7 @@
     "main": "server.js",
     "scripts": {
         "pretty": "npx prettier --write .",
-        "pretty-cmt": "npx prettier --write . && git add . && git commit -m '$npm_package_config_message' && git status",
+        "pretty-cmt": "npx prettier --write . && git add . && git commit -m \"$npm_package_config_message\" && git status",
         "pretty-cmt-push": "npx prettier --write . && git add . && git commit -m 'update'",
         "compile": "npx tsc",
         "serve": "npx tsc && node ./app/web-server/express.js",
