@@ -7,7 +7,8 @@
         "pretty-cmt": "npx prettier --write . && git add . && git commit -m 'update' && git status",
         "pretty-cmt-push": "npx prettier --write . && git add . && git commit -m 'update'",
         "compile": "npx tsc",
-        "serve": "npx tsc && node ./app/web-server/express.js"
+        "serve": "npx tsc && node ./app/web-server/express.js",
+        "pretty-and-serve": "npx prettier --write . && npx tsc &&  node ./app/web-server/express.js"
     },
     "keywords": [],
     "author": "",

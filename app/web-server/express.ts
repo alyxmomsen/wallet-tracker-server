@@ -3,6 +3,7 @@ import { Request, Response } from 'express'
 import { DocumentData } from 'firebase/firestore'
 import { authService, myApplication } from '..'
 import { TDataBaseUser } from '../db/app'
+import { TRequirementStats } from '../core/src/RequirementCommand'
 
 const bodyParser = require('body-parser')
 const express = require('express')
@@ -15,19 +16,31 @@ webApp.use(cors())
 webApp.use(bodyParser())
 webApp.use(express.json())
 
-export interface IBody {
+type TAuthUserData = {
+    userId: string
+}
+
+type TUserData = {
+    userName: string
+}
+
+export type TResponseJSONData<T> = {
+    status: {
+        code: number
+        details: string
+    }
+    payload: T | null
+}
+
+//
+type TRequestBodyType = {
     username: string
     password: string
 }
 
-type TUserData = {
-    userId: string
-}
-
-type TResponseJSONData = {
-    status: boolean
-    details: string
-    payload: TUserData | null
+// dev: user id ; prod: jwt
+type TAuthRequestHeaders = {
+    'x-auth': string
 }
 
 // Простой маршрут по умолчанию
@@ -36,7 +49,7 @@ webApp.get('/', async (req: Request, res: Response) => {
 })
 
 webApp.post('/auth', async (req: Request, res: Response) => {
-    const { body }: { body: IBody | undefined } = req
+    const { body }: { body: TRequestBodyType | undefined } = req
 
     if (!body) {
         return res.status(400).json({
@@ -71,17 +84,23 @@ webApp.post('/auth', async (req: Request, res: Response) => {
         })
     }
 
-    const { username: name } = data as TDataBaseUser
+    // const { username: name } = data as TDataBaseUser
 
-    res.status(200).json({
-        details: 'authorized',
-        username: name,
-        userId: userData.id,
-    })
+    const responseData: TResponseJSONData<TAuthUserData> = {
+        payload: {
+            userId: userData.id,
+        },
+        status: {
+            code: 0,
+            details: 'user authorized successfuly',
+        },
+    }
+
+    res.status(200).json(responseData)
 })
 
 webApp.post('/registration', async (req: Request, res: Response) => {
-    const { body }: { body: IBody | undefined } = req
+    const { body }: { body: TRequestBodyType | undefined } = req
 
     if (!body) {
         return res.status(400).json({
@@ -99,29 +118,41 @@ webApp.post('/registration', async (req: Request, res: Response) => {
     }
 
     const {
-        status: code,
+        status,
         message: details,
         userData,
     } = await myApplication.addUserAsync(username, password)
 
-    return res.status(code ? 200 : 400).json({
-        status: code,
-        details,
+    if (!status) {
+        return res.status(400).json({
+            status: {
+                code: 2,
+                details: 'user alredy exists',
+            },
+            payload: null,
+        } as TResponseJSONData<TAuthUserData>)
+    }
+
+    return res.status(200).json({
+        status: {
+            code: 0,
+            details: 'user registrated successfully',
+        },
         payload: {
             userId: userData?.id,
         },
-    } as TResponseJSONData)
+    } as TResponseJSONData<TAuthUserData>)
 })
 
-webApp.post('/get-user', async (req: Request, res: Response) => {
-    console.log('get user')
-
+webApp.post('/get-user-protected', async (req: Request, res: Response) => {
     const token = req.headers['x-auth']
 
     if (typeof token !== 'string') {
-        const responseData: TResponseJSONData = {
-            status: false,
-            details: 'no token',
+        const responseData: TResponseJSONData<TUserData> = {
+            status: {
+                code: 1,
+                details: 'no token',
+            },
             payload: null,
         }
 
@@ -132,24 +163,82 @@ webApp.post('/get-user', async (req: Request, res: Response) => {
         await myApplication.getPersonByIdAsync(token)
 
     if (userDocument === null) {
-        const responseData: TResponseJSONData = {
-            status: false,
-            details: 'no user',
+        const responseData: TResponseJSONData<TUserData> = {
+            status: {
+                code: 2,
+                details: 'no user',
+            },
             payload: null,
         }
 
         return res.status(300).json(responseData)
     }
 
-    const responseData: TResponseJSONData & { userId: string } = {
-        status: true,
-        details: 'user data',
-        payload: userDocument.username,
-        userId: token,
+    const responseData: TResponseJSONData<TUserData> = {
+        status: {
+            code: 0,
+            details: 'user data',
+        },
+        payload: {
+            userName: userDocument.username,
+        },
     }
 
     res.status(200).json(responseData)
 })
+
+type TGetRequirementsRequestBody = {}
+
+// const v: TAuthRequestHeaders = {
+//     "x-auth":''
+// }
+
+type TGetRequiremenstResponse = {
+    requirements: TRequirementStats[]
+}
+
+webApp.post(
+    '/get-user-requirements-protected',
+    async (req: Request, res: Response) => {
+        const headers = req.headers
+
+        const { 'x-auth': authHeader } = headers
+
+        const { body } = req
+
+        console.log({ authHeader, body })
+
+        // if (body === undefined) {
+        //     res.status(500).json({
+        //         foo: 'bar',
+        //         details: 'server error',
+        //     })
+        // }
+
+        try {
+            const requirements = await myApplication.getPersonRequirementsAsync(
+                authHeader as string
+            )
+            console.log({ requirements })
+
+            const response: TGetRequiremenstResponse = {
+                requirements,
+            }
+
+            res.status(200).json(response)
+        } catch (e) {
+            const response: TGetRequiremenstResponse = {
+                requirements: [],
+            }
+
+            res.status(500).json(response)
+        }
+    }
+)
+
+// function routeHandlerWrapper(request:Request , response:Response , handler:() => ):void {
+
+// }
 
 // Пример маршрута с параметрами
 // app.get('/hello/:name', (req, res) => {

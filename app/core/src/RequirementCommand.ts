@@ -8,6 +8,16 @@ export interface IRequirementCommand {
     getExecutionDate(): number
     checkIfExecuted(): boolean
     getTransactionTypeCode(): number
+    getTitle(): string
+}
+
+export type TRequirementStats = {
+    title: string
+    value: number
+    description: string
+    date: number
+    isExecuted: boolean
+    transactionTypeCode: number
 }
 
 abstract class RequirementCommand implements IRequirementCommand {
@@ -21,6 +31,10 @@ abstract class RequirementCommand implements IRequirementCommand {
     abstract executeWithValue(value: number): number
 
     abstract execute(person: IPerson): boolean
+
+    getTitle(): string {
+        return this.title
+    }
 
     getTransactionTypeCode(): number {
         return this.transactionTypeCode

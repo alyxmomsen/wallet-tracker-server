@@ -10,6 +10,7 @@ import {
     DecrementMoneyRequirementCommand,
     IncrementMoneyRequirementCommand,
     IRequirementCommand,
+    TRequirementStats,
 } from './RequirementCommand'
 import { ITask } from './Task'
 
@@ -27,6 +28,7 @@ export interface IApplicationFacade {
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>): void
     update(): void
     getPersonByIdAsync(id: string): Promise<DocumentData | null>
+    getPersonRequirementsAsync(id: string): Promise<TRequirementStats[]>
 }
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
@@ -48,6 +50,55 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         }
 
         return ApplicationSingletoneFacade.instance
+    }
+
+    // getPersonRequirementsAsync(id: string): Promise<TRequirementStats[]> {
+    //     return new Promise(() => {});
+    // }
+
+    getPersonRequirementsAsync(id: string): Promise<TRequirementStats[]> {
+        const users: IPerson[] = []
+
+        for (const user of this.usersPool) {
+            const userId = user.getId()
+
+            if (userId === id) {
+                users.push(user)
+            }
+        }
+
+        const usersLength = users.length
+
+        if (usersLength > 1) {
+            // new Error('users by id length are no one: ' + users.length)
+            return new Promise((res, rej) => res([]))
+        }
+
+        console.log({ users })
+
+        const requirements: TRequirementStats[] = users[0]
+            .getAllReauirementCommands()
+            .map((requirement) => {
+                const date = requirement.getExecutionDate()
+                const description = requirement.getDescription()
+                const isExecuted = requirement.checkIfExecuted()
+                const title = requirement.getTitle()
+                const transactionTypeCode = requirement.getTransactionTypeCode()
+                const value = requirement.getValue()
+
+                return {
+                    date,
+                    description,
+                    isExecuted,
+                    title,
+                    transactionTypeCode,
+                    value,
+                }
+            })
+
+        return new Promise((resolve, reject) => {
+            resolve(requirements)
+        })
     }
 
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>) {}
@@ -192,15 +243,21 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                                           )
                                 )
 
-                                console.log(
-                                    'added requrement: ' +
-                                        newUser.getAllReauirementCommands()
-                                )
+                                console.log('added requrement: ', {
+                                    requirement:
+                                        newUser.getAllReauirementCommands(),
+                                })
                             })
                         }
                     })
 
-                console.log('user added: ' + newUser.getUserName())
+                console.log(
+                    'user added: ' +
+                        ' userId: ' +
+                        id +
+                        ' username: ' +
+                        newUser.getUserName()
+                )
             })
         })
     }
