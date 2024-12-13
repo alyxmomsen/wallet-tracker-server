@@ -24,12 +24,13 @@ type TUserData = {
     userName: string
 }
 
-export type TResponseJSONData<T> = {
+// p - payload
+export type TResponseJSONData<P> = {
     status: {
         code: number
         details: string
     }
-    payload: T | null
+    payload: P | null
 }
 
 //
@@ -221,14 +222,22 @@ webApp.post(
             )
             console.log({ requirements })
 
-            const response: TGetRequiremenstResponse = {
-                requirements,
+            const response: TResponseJSONData<TRequirementStats[]> = {
+                status: {
+                    code: 0,
+                    details: 'requirements',
+                },
+                payload: requirements,
             }
 
             res.status(200).json(response)
         } catch (e) {
-            const response: TGetRequiremenstResponse = {
-                requirements: [],
+            const response: TResponseJSONData<TRequirementStats[]> = {
+                status: {
+                    code: 1,
+                    details: 'internal error',
+                },
+                payload: null,
             }
 
             res.status(500).json(response)
