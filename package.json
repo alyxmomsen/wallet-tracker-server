@@ -4,8 +4,8 @@
     "main": "server.js",
     "scripts": {
         "pretty": "npx prettier --write .",
-        "pretty-cmt": "npx prettier --write . && git add . && git commit -m \"$1\" && git status",
-        "pretty-cmt-push": "npx prettier --write . && git add . && git commit -m 'update'",
+        "pretty-cmt": "npx prettier --write . && git add . && git commit -m \"update\" && git status",
+        "pretty-cmt-push": "npx prettier --write . && git add . && git commit -m \"update\"",
         "compile": "npx tsc",
         "serve": "npx tsc && node ./app/web-server/express.js",
         "pretty-and-serve": "npx prettier --write . && npx tsc &&  node ./app/web-server/express.js"
