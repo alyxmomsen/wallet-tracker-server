@@ -203,11 +203,11 @@ webApp.post(
     async (req: Request, res: Response) => {
         const headers = req.headers
 
-        const { 'x-auth': authHeader } = headers
+        const userId = headers['x-auth'] as string | undefined
 
         const { body } = req
 
-        console.log({ authHeader, body })
+        console.log({ userId, body })
 
         // if (body === undefined) {
         //     res.status(500).json({
@@ -216,32 +216,72 @@ webApp.post(
         //     })
         // }
 
-        try {
-            const requirements = await myApplication.getPersonRequirementsAsync(
-                authHeader as string
-            )
-            console.log({ requirements })
-
-            const response: TResponseJSONData<TRequirementStats[]> = {
-                status: {
-                    code: 0,
-                    details: 'requirements',
-                },
-                payload: requirements,
-            }
-
-            res.status(200).json(response)
-        } catch (e) {
-            const response: TResponseJSONData<TRequirementStats[]> = {
+        if (userId === undefined) {
+            return res.status(500).json({
                 status: {
                     code: 1,
                     details: 'internal error',
                 },
                 payload: null,
-            }
-
-            res.status(500).json(response)
+            } as TResponseJSONData<TRequirementStats[]>)
         }
+
+        try {
+            const requirements =
+                await myApplication.getPersonRequirementsAsync(userId)
+            console.log({ requirements })
+
+            res.status(200).json({
+                status: {
+                    code: 0,
+                    details: 'requirements',
+                },
+                payload: requirements,
+            } as TResponseJSONData<TRequirementStats[]>)
+        } catch (e) {
+            res.status(500).json({
+                status: {
+                    code: 1,
+                    details: 'internal error',
+                },
+                payload: null,
+            } as TResponseJSONData<TRequirementStats[]>)
+        }
+    }
+)
+
+webApp.post(
+    '/add-user-requirements-protected',
+    async (req: Request, res: Response) => {
+        const body = req.body
+
+        if (body === undefined) {
+            return res.status(200).json({
+                payload: null,
+                status: {
+                    code: 1,
+                    details: 'internal error',
+                },
+            } as TResponseJSONData<null>)
+        }
+
+        const { requirements } = body as {
+            requirements: TRequirementStats[]
+        }
+
+        // Добавляем реквайерменты
+
+        // возвращаем отчет
+
+        const response: TResponseJSONData<{}> = {
+            payload: null,
+            status: {
+                code: 0,
+                details: 'details',
+            },
+        }
+
+        res.status(200).json(response)
     }
 )
 

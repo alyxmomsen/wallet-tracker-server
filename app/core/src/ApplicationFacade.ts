@@ -70,7 +70,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         const usersLength = users.length
 
         if (usersLength > 1) {
-            // new Error('users by id length are no one: ' + users.length)
+            new Error('users by id length are no one: ' + users.length)
             return new Promise((res, rej) => res([]))
         }
 
