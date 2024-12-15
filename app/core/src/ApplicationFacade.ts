@@ -3,16 +3,23 @@ import {
     FirebaseConnector,
     IDataBaseConnector,
     TDatabaseResultStatus,
+    TWalletData,
 } from '../../db/app'
 import { IPersonFactory, UserPersonFactory } from './factories/PersonFactory'
-import { IPerson, OrdinaryPerson as User } from './person/Person'
 import {
-    DecrementMoneyRequirementCommand,
-    IncrementMoneyRequirementCommand,
+    IPerson,
+    OrdinaryPerson,
+    OrdinaryPerson as User,
+} from './person/Person'
+
+import { ITask } from './Task'
+import { TUserData } from '../../web-server/express'
+import { resolve } from 'path'
+import {
     IRequirementCommand,
     TRequirementStats,
-} from './RequirementCommand'
-import { ITask } from './Task'
+} from './requirement-command/RequirementCommand'
+import { RequiremenCommandFactory } from './requirement-command/factories/Requirement-command-factory'
 
 export interface IApplicationFacade {
     addUserIntoThePool(
@@ -27,8 +34,15 @@ export interface IApplicationFacade {
     getPersons(): IPerson[]
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>): void
     update(): void
-    getPersonByIdAsync(id: string): Promise<DocumentData | null>
+    getPersonByIdAsync(id: string): Promise<{
+        userData: TUserData | null
+        details: {
+            code: number
+            description: string
+        }
+    }>
     getPersonRequirementsAsync(id: string): Promise<TRequirementStats[]>
+    getPersonWalletsByUserIdIdAsync(id: string): Promise<TWalletData[]>
 }
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
@@ -50,6 +64,12 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         }
 
         return ApplicationSingletoneFacade.instance
+    }
+
+    async getPersonWalletsByUserIdIdAsync(id: string): Promise<TWalletData[]> {
+        const wallet = await this.dataBaseConnector.getPersonWalletByUserId(id)
+
+        return wallet
     }
 
     // getPersonRequirementsAsync(id: string): Promise<TRequirementStats[]> {
@@ -180,14 +200,44 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return this.usersPool
     }
 
-    async getPersonByIdAsync(id: string): Promise<DocumentData | null> {
-        const docData = await this.dataBaseConnector.getPersonById(id)
+    async getPersonByIdAsync(id: string): Promise<{
+        userData: TUserData | null
+        details: {
+            code: number
+            description: string
+        }
+    }> {
+        // const userData = await this.dataBaseConnector.getPersonById(id)
 
-        console.log({
-            docData,
+        const users: IPerson[] = this.usersPool.filter((elem) => {
+            return elem.getId() === id
         })
 
-        return docData
+        if (users.length > 1) {
+            return {
+                userData: null,
+                details: {
+                    code: 1,
+                    description: 'internal error: user amount too match',
+                },
+            }
+        }
+
+        const userData: TUserData | null = users.length
+            ? {
+                  userName: users[0].getUserName(),
+                  wallet: users[0].getWalletBalance(),
+                  id: users[0].getId(),
+              }
+            : null
+
+        return {
+            userData: userData,
+            details: {
+                code: 0,
+                description: 'OK',
+            },
+        }
     }
 
     update() {}
@@ -196,7 +246,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         dataBaseConnector: IDataBaseConnector,
         personFactory: IPersonFactory
     ) {
-        // const toDateString(date:Date);
         console.log('application started at ' + new Date().toLocaleTimeString())
         this.dataBaseConnector = dataBaseConnector
         this.personFactory = personFactory
@@ -205,59 +254,91 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             'connecting to data base started at ' +
                 new Date().toLocaleTimeString()
         )
-        this.dataBaseConnector.getPersons().then((response) => {
-            response.forEach((queryDocumentSnapshot) => {
-                const data = queryDocumentSnapshot.data()
-                const id = queryDocumentSnapshot.id
-                const newUser = new User(data.username, 0, id)
-                this.usersPool.push(newUser)
-                dataBaseConnector
-                    .getRequiremntsByUserId(id)
-                    .then((requirements) => {
-                        if (requirements.length) {
-                            requirements.forEach((requirement) => {
-                                const directionCode =
-                                    requirement.cashFlowDirectionCode
-                                const {
-                                    value,
-                                    description,
-                                    userId,
-                                    dateToExecute,
-                                    cashFlowDirectionCode,
-                                    title,
-                                } = requirement
 
-                                newUser.addRequirementCommand(
-                                    cashFlowDirectionCode === 0
-                                        ? new DecrementMoneyRequirementCommand(
-                                              value,
-                                              title,
-                                              description,
-                                              dateToExecute
-                                          )
-                                        : new IncrementMoneyRequirementCommand(
-                                              value,
-                                              title,
-                                              description,
-                                              dateToExecute
-                                          )
-                                )
+        this.dataBaseConnector.getAllPersons().then((usersData) => {
+            const requirementFactory = new RequiremenCommandFactory()
 
-                                console.log('added requrement: ', {
-                                    requirement:
-                                        newUser.getAllReauirementCommands(),
+            Promise.all(
+                usersData.map((user) => {
+                    return new Promise<{ description: string; subj: IPerson }>(
+                        (globalResolve) => {
+                            const userId = user.id
+                            const newUser = new OrdinaryPerson(
+                                user.userName,
+                                0,
+                                userId
+                            )
+
+                            Promise.all([
+                                new Promise((resolve) => {
+                                    dataBaseConnector
+                                        .getPersonWalletByUserId(userId)
+                                        .then((wallets) => {
+                                            if (wallets.length) {
+                                                const {
+                                                    balance,
+                                                    description,
+                                                    title,
+                                                    walletId,
+                                                } = wallets[0]
+
+                                                newUser.incrementWallet(balance)
+                                            }
+
+                                            resolve('foo')
+                                        })
+                                }),
+                                new Promise((resolve) => {
+                                    dataBaseConnector
+                                        .getRequiremntsByUserId(userId)
+                                        .then((response) => {
+                                            response.forEach((elem) => {
+                                                const {
+                                                    value,
+                                                    title,
+                                                    description,
+                                                    dateToExecute: date,
+                                                    cashFlowDirectionCode:
+                                                        transactionDirection,
+                                                    userId,
+                                                } = elem
+
+                                                const requirement =
+                                                    requirementFactory.create(
+                                                        value,
+                                                        title,
+                                                        description,
+                                                        date,
+                                                        transactionDirection
+                                                    )
+
+                                                if (requirement) {
+                                                    newUser.addRequirementCommand(
+                                                        requirement
+                                                    )
+                                                }
+                                            })
+
+                                            resolve('bar')
+                                        })
+                                }),
+                            ]).then((resolves) => {
+                                globalResolve({
+                                    description: 'global resolver',
+                                    subj: newUser,
                                 })
+
+                                // this.usersPool.push(newUser)
                             })
                         }
-                    })
+                    )
+                })
+            ).then((e) => {
+                console.log(e)
 
-                console.log(
-                    'user added: ' +
-                        ' userId: ' +
-                        id +
-                        ' username: ' +
-                        newUser.getUserName()
-                )
+                // e.forEach(elem => {
+
+                // })
             })
         })
     }

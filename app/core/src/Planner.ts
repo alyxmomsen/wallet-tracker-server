@@ -1,5 +1,5 @@
 import { IPerson } from './person/Person'
-import { IRequirementCommand } from './RequirementCommand'
+import { IRequirementCommand } from './requirement-command/RequirementCommand'
 
 import { ITask, RequirementTask } from './Task'
 

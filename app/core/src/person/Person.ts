@@ -1,4 +1,4 @@
-import { IRequirementCommand } from '../RequirementCommand'
+import { IRequirementCommand } from '../requirement-command/RequirementCommand'
 import { IWallet, Wallet } from '../Wallet'
 import { GoingSleepStatus, IPersonStatusSystem } from './PersonStatus'
 
@@ -43,6 +43,7 @@ export abstract class Person implements IPerson {
     // protected sleepLevel: number;
     protected averageSpending: number
     protected status: IPersonStatusSystem
+    protected updateStatus: number
 
     getId(): string {
         return this.id
@@ -134,6 +135,14 @@ export abstract class Person implements IPerson {
         })
     }
 
+    getUpdateStatus(): number {
+        return this.updateStatus
+    }
+
+    setUpdateStatus(value: number): void {
+        this.updateStatus = value
+    }
+
     constructor(wallet: IWallet, name: string, userId: string) {
         this.wallet = wallet
         this.name = name
@@ -141,6 +150,7 @@ export abstract class Person implements IPerson {
         this.averageSpending = 0
         this.status = new GoingSleepStatus()
         this.id = userId
+        this.updateStatus = 0
     }
 }
 

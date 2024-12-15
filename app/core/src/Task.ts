@@ -1,5 +1,5 @@
 import { IPerson } from './person/Person'
-import { IRequirementCommand } from './RequirementCommand'
+import { IRequirementCommand } from './requirement-command/RequirementCommand'
 
 export interface ITask<T, S> {
     // apply(subject: S): void

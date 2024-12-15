@@ -2,8 +2,8 @@ import { Request, Response } from 'express'
 
 import { DocumentData } from 'firebase/firestore'
 import { authService, myApplication } from '..'
-import { TDataBaseUser } from '../db/app'
-import { TRequirementStats } from '../core/src/RequirementCommand'
+import { TDataBaseUser, TWalletData } from '../db/app'
+import { TRequirementStats } from '../core/src/requirement-command/RequirementCommand'
 
 const bodyParser = require('body-parser')
 const express = require('express')
@@ -20,8 +20,14 @@ type TAuthUserData = {
     userId: string
 }
 
-type TUserData = {
+export type TUserData = {
     userName: string
+    wallet: number
+    id: string
+}
+
+export type TDBUserData = {
+    username: string
 }
 
 // p - payload
@@ -43,6 +49,56 @@ type TRequestBodyType = {
 type TAuthRequestHeaders = {
     'x-auth': string
 }
+
+webApp.post('/get-user-wallet-protected', (req: Request, res: Response) => {
+    const xauth = req.headers['x-auth']
+
+    if (typeof xauth === 'object') {
+        res.status(500).json({
+            payload: null,
+            status: {
+                code: 0,
+                details: 'check internal error',
+            },
+        } as TResponseJSONData<null>)
+    }
+
+    if (typeof xauth === 'string') {
+        myApplication
+            .getPersonWalletsByUserIdIdAsync(xauth)
+            .then((data) => {
+                return res.status(200).json({
+                    payload: data,
+                    status: {
+                        code: 0,
+                        details: 'check',
+                    },
+                } as TResponseJSONData<TWalletData[]>)
+            })
+            .catch((e) => {
+                console.error({
+                    errorDetais: e,
+                    description: 'somthing wrong',
+                })
+                return res.status(500).json({
+                    payload: null,
+                    status: {
+                        code: 0,
+                        details: 'check internal error',
+                    },
+                } as TResponseJSONData<null>)
+            })
+            .finally()
+    } else {
+        res.status(500).json({
+            payload: null,
+            status: {
+                code: 0,
+                details: 'check internal error',
+            },
+        } as TResponseJSONData<null>)
+    }
+})
 
 // Простой маршрут по умолчанию
 webApp.get('/', async (req: Request, res: Response) => {
@@ -160,14 +216,15 @@ webApp.post('/get-user-protected', async (req: Request, res: Response) => {
         return res.status(300).json(responseData)
     }
 
-    const userDocument: DocumentData | null =
-        await myApplication.getPersonByIdAsync(token)
+    const userDataResponse = await myApplication.getPersonByIdAsync(token)
 
-    if (userDocument === null) {
+    const responseStatusCode = userDataResponse.details.code
+
+    if (responseStatusCode !== 0) {
         const responseData: TResponseJSONData<TUserData> = {
             status: {
-                code: 2,
-                details: 'no user',
+                code: responseStatusCode,
+                details: 'internal error , too much user with this id ',
             },
             payload: null,
         }
@@ -175,14 +232,19 @@ webApp.post('/get-user-protected', async (req: Request, res: Response) => {
         return res.status(300).json(responseData)
     }
 
-    const responseData: TResponseJSONData<TUserData> = {
+    const userData = userDataResponse.userData
+
+    const responseData: TResponseJSONData<Omit<TUserData, 'id'>> = {
         status: {
             code: 0,
             details: 'user data',
         },
-        payload: {
-            userName: userDocument.username,
-        },
+        payload: userData
+            ? {
+                  userName: userData.userName,
+                  wallet: userData.wallet,
+              }
+            : null,
     }
 
     res.status(200).json(responseData)

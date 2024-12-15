@@ -17,6 +17,7 @@ import {
     QueryDocumentSnapshot,
     DocumentReference,
 } from 'firebase/firestore'
+import { TDBUserData, TUserData } from '../web-server/express'
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -57,9 +58,11 @@ export interface IDataBaseConnector {
         username: string,
         password: string
     ): Promise<TDatabaseResultStatus>
-    getPersons(): Promise<QueryDocumentSnapshot<DocumentData, DocumentData>[]>
+    getAllPersons(): Promise<Omit<TUserData, 'wallet'>[]>
     getRequiremntsByUserId(userId: string): Promise<TRequrementsDataBaseType[]>
-    getPersonById(id: string): Promise<DocumentData | null>
+    getPersonById(id: string): Promise<Omit<TUserData, 'wallet'> | null>
+    getDataAsync(): Promise<any>
+    getPersonWalletByUserId(id: string): Promise<TWalletData[]>
 }
 
 export type TDataBaseUser = {
@@ -78,8 +81,61 @@ export type TRequrementsDataBaseType = {
     cashFlowDirectionCode: number
 }
 
+export type TWalletData = {
+    walletId: string
+    balance: number
+    title: string
+    description: string
+}
+
+export type TWalletDBData = {
+    userId: string
+    balance: number
+    title: string
+    description: string
+}
+
 export class FirebaseConnector implements IDataBaseConnector {
-    async getPersonById(id: string): Promise<DocumentData | null> {
+    async getPersonWalletByUserId(id: string): Promise<TWalletData[]> {
+        const qwery = query(
+            collection(db, 'wallets'),
+            where('userId', '==', id)
+        )
+
+        const docSnapshots = await getDocs(qwery)
+
+        if (docSnapshots.empty) {
+            return []
+        }
+
+        const walletsPool: TWalletData[] = []
+
+        docSnapshots.forEach((walletDocSnap) => {
+            // elem.exists();
+
+            if (walletDocSnap.exists()) {
+                const walletId = walletDocSnap.id
+
+                const { userId, balance, description, title } =
+                    walletDocSnap.data() as TWalletDBData
+
+                walletsPool.push({
+                    balance,
+                    walletId,
+                    description,
+                    title,
+                })
+            }
+        })
+
+        return walletsPool
+    }
+
+    getDataAsync(): Promise<any> {
+        return Promise.resolve()
+    }
+
+    async getPersonById(id: string): Promise<Omit<TUserData, 'wallet'> | null> {
         return await getPersonsByIdFireBase(id)
     }
 
@@ -163,7 +219,7 @@ export class FirebaseConnector implements IDataBaseConnector {
         }
     }
 
-    async getPersons() {
+    async getAllPersons(): Promise<Omit<TUserData, 'wallet'>[]> {
         return await getAllFireStoreDocs('persons')
     }
 
@@ -203,18 +259,25 @@ async function getUserRequirementsByUserId(
 
 async function getPersonsByIdFireBase(
     id: string
-): Promise<DocumentData | null> {
+): Promise<Omit<TUserData, 'wallet'> | null> {
     // 'jW7vjyole5yNxtis70BH'
 
     const docRef = doc(db, 'persons', id)
 
     const docSnap = await getDoc(docRef)
 
-    const data = docSnap.data()
+    if (!docSnap.exists()) {
+        return null
+    }
 
-    console.log({ data })
+    const userId = docSnap.id
 
-    return data || null
+    const { username } = docSnap.data() as TDBUserData
+
+    return {
+        userName: username,
+        id: userId,
+    }
 }
 
 async function addPersonIntoFireStore(username: string, password: string) {
@@ -267,7 +330,9 @@ async function checkRecordExistsByField(
     }
 }
 
-async function getAllFireStoreDocs(collectionName: string) {
+async function getAllFireStoreDocs(
+    collectionName: string
+): Promise<Omit<TUserData, 'wallet'>[]> {
     const qwery = query(
         collection(db, 'persons')
         // where('username', '==', username),
@@ -277,8 +342,23 @@ async function getAllFireStoreDocs(collectionName: string) {
 
     const querySnapshot = await getDocs(qwery)
 
-    if (!querySnapshot.empty) {
-        console.log(querySnapshot.docs.length)
+    if (querySnapshot.empty) {
+        return []
     }
-    return querySnapshot.docs
+
+    const users: Omit<TUserData, 'wallet'>[] = []
+
+    querySnapshot.forEach((elem) => {
+        if (elem.exists()) {
+            const id = elem.id
+            const { username } = elem.data() as TDBUserData
+
+            users.push({
+                userName: username,
+                id,
+            })
+        }
+    })
+
+    return users
 }
