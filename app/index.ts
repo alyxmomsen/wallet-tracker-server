@@ -11,5 +11,6 @@ const personFactory = new UserPersonFactory()
 export const authService: IAuthService = new AuthService(firebaseConnector)
 export const myApplication = ApplicationSingletoneFacade.Instance(
     firebaseConnector,
-    personFactory
+    personFactory,
+    authService
 )

@@ -1,8 +1,6 @@
 import { Request, Response } from 'express'
-
-import { DocumentData } from 'firebase/firestore'
 import { authService, myApplication } from '..'
-import { TDataBaseUser, TWalletData } from '../db/app'
+import { TWalletData } from '../db/app'
 import { TRequirementStats } from '../core/src/requirement-command/RequirementCommand'
 
 const bodyParser = require('body-parser')
@@ -49,6 +47,62 @@ type TRequestBodyType = {
 type TAuthRequestHeaders = {
     'x-auth': string
 }
+
+type TCheckUserAuthResponseData = {
+    token: string
+}
+
+webApp.post('/check-user-auth-protected-ep', (req: Request, res: Response) => {
+    const headers = req.headers
+
+    const xAuth = headers['x-auth']
+
+    console.log({ xAuth })
+
+    if (typeof xAuth !== 'string') {
+        return res.status(500).json({
+            payload: null,
+            status: {
+                code: 1,
+                details: 'internal error',
+            },
+        } as TResponseJSONData<null>)
+    }
+
+    const authServiceResponse = myApplication.checkUserAuth(xAuth)
+
+    const { status, payload } = authServiceResponse
+
+    if (status.code !== 0) {
+        return res.status(500).json({
+            payload: null,
+            status: {
+                code: 2,
+                details: 'invalid token , probably',
+            },
+        } as TResponseJSONData<null>)
+    }
+
+    if (payload === null) {
+        return res.status(500).json({
+            payload: null,
+            status: {
+                code: 1,
+                details: 'internal error',
+            },
+        } as TResponseJSONData<null>)
+    }
+
+    res.status(201).json({
+        status: {
+            code: 0,
+            details: 'token updated',
+        },
+        payload: {
+            token: payload.updatedToken,
+        },
+    } as TResponseJSONData<TCheckUserAuthResponseData>)
+})
 
 webApp.post('/get-user-wallet-protected', (req: Request, res: Response) => {
     const xauth = req.headers['x-auth']
@@ -217,6 +271,8 @@ webApp.post('/get-user-protected', async (req: Request, res: Response) => {
     }
 
     const userDataResponse = await myApplication.getPersonByIdAsync(token)
+
+    // console.log({userDataResponse});
 
     const responseStatusCode = userDataResponse.details.code
 

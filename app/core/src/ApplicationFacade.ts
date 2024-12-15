@@ -1,4 +1,3 @@
-import { DocumentData } from 'firebase/firestore'
 import {
     FirebaseConnector,
     IDataBaseConnector,
@@ -14,12 +13,16 @@ import {
 
 import { ITask } from './Task'
 import { TUserData } from '../../web-server/express'
-import { resolve } from 'path'
+
 import {
     IRequirementCommand,
     TRequirementStats,
 } from './requirement-command/RequirementCommand'
 import { RequiremenCommandFactory } from './requirement-command/factories/Requirement-command-factory'
+import {
+    IAuthService,
+    TAuthServiceCheckTokenResponse,
+} from './auth-service/AuthService'
 
 export interface IApplicationFacade {
     addUserIntoThePool(
@@ -43,27 +46,41 @@ export interface IApplicationFacade {
     }>
     getPersonRequirementsAsync(id: string): Promise<TRequirementStats[]>
     getPersonWalletsByUserIdIdAsync(id: string): Promise<TWalletData[]>
+    checkUserAuth(id: string): TAuthServiceCheckTokenResponse
 }
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
     private usersPool: IPerson[]
     private static instance: ApplicationSingletoneFacade | null = null
     private dataBaseConnector: IDataBaseConnector
+    private authService: IAuthService
     private personFactory: IPersonFactory
 
     static Instance(
         dataBaseConnector: IDataBaseConnector,
-        personFactory: IPersonFactory
+        personFactory: IPersonFactory,
+        authService: IAuthService
     ) {
         if (ApplicationSingletoneFacade.instance === null) {
             ApplicationSingletoneFacade.instance =
                 new ApplicationSingletoneFacade(
                     dataBaseConnector,
-                    personFactory
+                    personFactory,
+                    authService
                 )
         }
 
         return ApplicationSingletoneFacade.instance
+    }
+
+    checkUserAuth(id: string): TAuthServiceCheckTokenResponse {
+        for (const user of this.usersPool) {
+            // user.ge
+        }
+
+        const response = this.authService.checkToken(id)
+
+        return response
     }
 
     async getPersonWalletsByUserIdIdAsync(id: string): Promise<TWalletData[]> {
@@ -223,6 +240,8 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             }
         }
 
+        console.log('get person by id:', users)
+
         const userData: TUserData | null = users.length
             ? {
                   userName: users[0].getUserName(),
@@ -244,9 +263,11 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
     private constructor(
         dataBaseConnector: IDataBaseConnector,
-        personFactory: IPersonFactory
+        personFactory: IPersonFactory,
+        authService: IAuthService
     ) {
         console.log('application started at ' + new Date().toLocaleTimeString())
+        this.authService = authService
         this.dataBaseConnector = dataBaseConnector
         this.personFactory = personFactory
         this.usersPool = []
@@ -327,18 +348,16 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                                     description: 'global resolver',
                                     subj: newUser,
                                 })
-
-                                // this.usersPool.push(newUser)
                             })
                         }
                     )
                 })
-            ).then((e) => {
-                console.log(e)
+            ).then((resolves) => {
+                console.log(resolves)
 
-                // e.forEach(elem => {
-
-                // })
+                resolves.forEach((elem) => {
+                    this.usersPool.push(elem.subj)
+                })
             })
         })
     }
