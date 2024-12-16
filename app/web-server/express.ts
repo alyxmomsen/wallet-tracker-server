@@ -39,7 +39,7 @@ export type TResponseJSONData<P> = {
 
 //
 type TRequestBodyType = {
-    username: string
+    userName: string
     password: string
 }
 
@@ -164,16 +164,40 @@ webApp.post('/auth', async (req: Request, res: Response) => {
 
     if (!body) {
         return res.status(400).json({
-            details: 'no body',
+            status: {
+                code: 1,
+                details: 'no body object',
+            },
+            payload: null
+        } as {
+            payload: {
+                userId: string
+            } | null;
+            status: {
+                code: number
+                details: string
+            }
         })
     }
 
-    const { username, password } = body
+    const { userName: username, password } = body
 
     if (username === undefined || password === undefined) {
         console.log({ body })
         return res.status(400).json({
-            details: 'no username or no password',
+            payload: null,
+            status: {
+                code: 2,
+                details:"no username or no password" ,
+            }
+        } as {
+            payload: {
+                userId: string
+            } | null;
+            status: {
+                code: number
+                details: string
+            }
         })
     }
 
@@ -183,7 +207,19 @@ webApp.post('/auth', async (req: Request, res: Response) => {
 
     if (!userData) {
         return res.status(400).json({
-            details: 'user is not exists',
+            payload: null,
+            status: {
+                code: 3,
+                details:"user is not exists" ,
+            }
+        } as {
+            payload: {
+                userId: string
+            } | null;
+            status: {
+                code: number
+                details: string
+            }
         })
     }
 
@@ -191,7 +227,19 @@ webApp.post('/auth', async (req: Request, res: Response) => {
 
     if (!data) {
         return res.status(400).json({
-            details: 'user is not exists , sorry',
+            payload: null,
+            status: {
+                code:4,
+                details:"user is not exists" ,
+            }
+        } as {
+            payload: {
+                userId: string
+            } | null;
+            status: {
+                code: number
+                details: string
+            }
         })
     }
 
@@ -219,9 +267,9 @@ webApp.post('/registration', async (req: Request, res: Response) => {
         })
     }
 
-    const { username, password } = body
+    const { userName, password } = body
 
-    if (username === undefined || password === undefined) {
+    if (userName === undefined || password === undefined) {
         console.log({ body })
         return res.status(400).json({
             details: 'no username or no password',
@@ -232,7 +280,7 @@ webApp.post('/registration', async (req: Request, res: Response) => {
         status,
         message: details,
         userData,
-    } = await myApplication.addUserAsync(username, password)
+    } = await myApplication.addUserAsync(userName, password)
 
     if (!status) {
         return res.status(400).json({
