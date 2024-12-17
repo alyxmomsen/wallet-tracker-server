@@ -15,6 +15,11 @@ export type TWalletTrackValue = {
     transactionTypeCode: number
 }
 
+export interface IUserStats {
+    name: string
+    wallet: IWallet
+}
+
 export interface IPerson {
     update(): void
     getWalletBalance(): number
@@ -31,6 +36,7 @@ export interface IPerson {
     getStatusDescription(): string
     setStatus(status: IPersonStatusSystem): boolean
     getId(): string
+    // getData():IUserStats
 }
 
 export abstract class Person implements IPerson {
@@ -44,6 +50,16 @@ export abstract class Person implements IPerson {
     protected averageSpending: number
     protected status: IPersonStatusSystem
     protected updateStatus: number
+
+    // getData(): IUserStats {
+
+    //     const v: IUserStats = {
+    //         name: '', 
+    //         wallet: 0
+    //     }
+
+    //     return 
+    // }
 
     getId(): string {
         return this.id

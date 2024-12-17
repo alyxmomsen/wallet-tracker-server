@@ -44,10 +44,11 @@ export interface IApplicationFacade {
         username: string,
         password: string
     ): Promise<TDatabaseResultStatus>
+    getPersonByID(id:string): IPerson | null;
     getPersons(): IPerson[]
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>): void
     update(): void
-    getUserById(): Promise<IPerson | null>
+    getUserById(id:string): Promise<IPerson | null>
     getPersonDataByIdAsync(id: string): Promise<{
         userData: TUserData | null
         details: {
@@ -56,7 +57,7 @@ export interface IApplicationFacade {
         }
     }>
     getPersonRequirementsAsync(id: string): Promise<TRequirementStats[]>
-    getPersonWalletsByUserIdIdAsync(id: string): Promise<TWalletData[]>
+    getWalletsByUserIdIdAsync(id: string): Promise<TWalletData[]>
     checkUserAuth(id: string): TAuthServiceCheckTokenResponse
 }
 
@@ -84,6 +85,19 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return ApplicationSingletoneFacade.instance
     }
 
+    getPersonByID(id:string): IPerson | null {
+        
+        const users = this.usersPool.filter(user => {
+            return user.getId() === id;
+        });
+
+        if (users.length > 1) {
+            throw new Error(`Internal error: multiple users found for ID ${id}`);
+        }
+
+        return users.length ? users[0] : null;
+    }
+
     async addUserRequirement({
         cashFlowDirectionCode,
         dateToExecute,
@@ -92,37 +106,22 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         title,
         userId,
         value,
-    }: IRequirementFields): Promise<any> {
-        const users = this.usersPool.filter((user) => user.getId() === userId)
+    }: IRequirementFields): Promise<IPerson> {
+        
+        const user = await this.getUserById(userId);
 
-        if (users.length > 1) {
-            new Error('user no one')
-            return 1
-        }
+        if (user === null) throw new Error('user by id is not exists');
 
-        if (users.length > 0) {
-            const newRequrement = new RequiremenCommandFactory().create(
-                value,
-                title,
-                description,
-                dateToExecute,
-                cashFlowDirectionCode
-            )
+        const factory = new RequiremenCommandFactory();
+        const requirement = factory.create(value , title , description , dateToExecute , cashFlowDirectionCode);
 
-            if (newRequrement) {
-                users[0].addRequirementCommand(newRequrement)
+        if (requirement === null) throw new Error('problems with requirement creation');
 
-                console.log({ myApplication })
+        user.addRequirementCommand(requirement);
 
-                return
-            } else {
-                return 0
-            }
-        } else {
-            this.dataBaseConnector.getPersonById(userId)
-            // handle case
-            return 0
-        }
+
+        return user;
+
     }
 
     checkUserAuth(id: string): TAuthServiceCheckTokenResponse {
@@ -135,7 +134,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return response
     }
 
-    async getPersonWalletsByUserIdIdAsync(id: string): Promise<TWalletData[]> {
+    async getWalletsByUserIdIdAsync(id: string): Promise<TWalletData[]> {
         const wallet = await this.dataBaseConnector.getPersonWalletByUserId(id)
 
         return wallet
@@ -269,11 +268,17 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return this.usersPool
     }
 
-    async getUserById(): Promise<IPerson | null> {
-
+    async getUserById(id: string): Promise<IPerson | null> {
         
+        console.log({userID:id});
 
-        return null;
+        const users = this.usersPool.filter(user => user.getId() === id);
+        
+        if (users.length > 1) {
+            throw new Error('Internal error : multiple users by id');
+        }
+
+        return users.length > 0 ? users[0] : null;
     }
 
     async getPersonDataByIdAsync(id: string): Promise<{
@@ -412,10 +417,10 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                     )
                 })
             ).then((resolves) => {
-                console.log(resolves)
-
+            
                 resolves.forEach((elem) => {
                     this.usersPool.push(elem.subj)
+                    console.log(elem.subj.getId() , elem.subj.getUserName());
                 })
             })
         })

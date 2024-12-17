@@ -122,7 +122,7 @@ webApp.post('/get-user-wallet-protected', (req: Request, res: Response) => {
 
     if (typeof xauth === 'string') {
         myApplication
-            .getPersonWalletsByUserIdIdAsync(xauth)
+            .getWalletsByUserIdIdAsync(xauth)
             .then((data) => {
                 return res.status(200).json({
                     payload: data,
@@ -432,6 +432,9 @@ export interface IRequirementFields {
 webApp.post(
     '/add-user-requirements-protected',
     async (req: Request, res: Response) => {
+
+        console.log({body:'body body body'});
+
         addRequirementsBodyValidatorService.execute(req, res)
 
         const body = req.body
@@ -451,8 +454,6 @@ webApp.post(
 
         const xAuth = req.headers['x-auth']
 
-        console.log({ body, xAuth })
-
         if (typeof xAuth !== 'string') {
             return res.status(500).json({
                 payload: null,
@@ -463,53 +464,37 @@ webApp.post(
             } as TResponseJSONData<null>)
         }
 
+        console.log('try try' , body);
 
-        // get user data by id
+        try {
 
-        const userDataResponse = await myApplication.getPersonDataByIdAsync(xAuth)
 
-        if (userDataResponse.userData === null) {
-            return res.status(400).json({
+            const updatedUser = await myApplication.addUserRequirement({ ...body , userId:xAuth });
+            
+            return res.status(200).json({
+                payload: {
+                    id: updatedUser.getId(),
+                    userName: updatedUser.getUserName(),
+                    wallet:updatedUser.getWalletBalance(),
+                },
+                status: {
+                    code: 0,
+                    details: 'details',
+                },
+            } as TResponseJSONData<TUserData>)
+        }
+        catch (error) {
+            console.log(error);
+
+            return res.status(500).json({
                 payload: null,
                 status: {
-                    code: 2,
-                    details: 'user is not exists',
+                    code: 5,
+                    details: error,
                 },
             } as TResponseJSONData<null>)
+            
         }
-
-        const {
-            cashFlowDirectionCode,
-            dateToExecute,
-            description,
-            isExecuted,
-            title,
-            userId,
-            value,
-        } = body as IRequirementFields
-
-        myApplication.addUserRequirement({
-            cashFlowDirectionCode,
-            dateToExecute,
-            description,
-            isExecuted,
-            title,
-            userId,
-            value,
-        })
-
-        // myApplication.checkUserAuth();
-        // возвращаем отчет
-
-        const response: TResponseJSONData<{}> = {
-            payload: null,
-            status: {
-                code: 0,
-                details: 'details',
-            },
-        }
-
-        res.status(200).json(response)
     }
 )
 
