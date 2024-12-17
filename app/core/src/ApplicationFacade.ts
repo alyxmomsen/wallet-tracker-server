@@ -47,7 +47,8 @@ export interface IApplicationFacade {
     getPersons(): IPerson[]
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>): void
     update(): void
-    getPersonByIdAsync(id: string): Promise<{
+    getUserById(): Promise<IPerson | null>
+    getPersonDataByIdAsync(id: string): Promise<{
         userData: TUserData | null
         details: {
             code: number
@@ -268,7 +269,14 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return this.usersPool
     }
 
-    async getPersonByIdAsync(id: string): Promise<{
+    async getUserById(): Promise<IPerson | null> {
+
+        
+
+        return null;
+    }
+
+    async getPersonDataByIdAsync(id: string): Promise<{
         userData: TUserData | null
         details: {
             code: number

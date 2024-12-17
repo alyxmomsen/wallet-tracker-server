@@ -2,12 +2,15 @@ import { Request, Response } from 'express'
 import { authService, myApplication } from '..'
 import { TWalletData } from '../db/app'
 import { TRequirementStats } from '../core/src/requirement-command/RequirementCommand'
+import { AddRequirementsBodyValidator } from './services/body-check-service'
 
 const bodyParser = require('body-parser')
 const express = require('express')
 const cors = require('cors')
 const webApp = express()
 const port = 3030
+
+const addRequirementsBodyValidatorService = new AddRequirementsBodyValidator()
 
 // Middleware для парсинга JSON
 webApp.use(cors())
@@ -223,7 +226,7 @@ webApp.post('/auth', async (req: Request, res: Response) => {
         })
     }
 
-    const data = await myApplication.getPersonByIdAsync(userData.id)
+    const data = await myApplication.getPersonDataByIdAsync(userData.id)
 
     if (!data) {
         return res.status(400).json({
@@ -318,7 +321,7 @@ webApp.post('/get-user-protected', async (req: Request, res: Response) => {
         return res.status(300).json(responseData)
     }
 
-    const userDataResponse = await myApplication.getPersonByIdAsync(token)
+    const userDataResponse = await myApplication.getPersonDataByIdAsync(token)
 
     // console.log({userDataResponse});
 
@@ -429,6 +432,8 @@ export interface IRequirementFields {
 webApp.post(
     '/add-user-requirements-protected',
     async (req: Request, res: Response) => {
+        addRequirementsBodyValidatorService.execute(req, res)
+
         const body = req.body
 
         if (body === undefined) {
@@ -441,7 +446,8 @@ webApp.post(
             } as TResponseJSONData<null>)
         }
 
-        // Добавляем реквайерменты
+
+        // check headers the x-auth
 
         const xAuth = req.headers['x-auth']
 
@@ -457,9 +463,12 @@ webApp.post(
             } as TResponseJSONData<null>)
         }
 
-        const user = await myApplication.getPersonByIdAsync(xAuth)
 
-        if (user.userData === null) {
+        // get user data by id
+
+        const userDataResponse = await myApplication.getPersonDataByIdAsync(xAuth)
+
+        if (userDataResponse.userData === null) {
             return res.status(400).json({
                 payload: null,
                 status: {
@@ -477,7 +486,7 @@ webApp.post(
             title,
             userId,
             value,
-        } = body
+        } = body as IRequirementFields
 
         myApplication.addUserRequirement({
             cashFlowDirectionCode,
