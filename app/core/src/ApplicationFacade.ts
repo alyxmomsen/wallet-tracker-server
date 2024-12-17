@@ -44,11 +44,11 @@ export interface IApplicationFacade {
         username: string,
         password: string
     ): Promise<TDatabaseResultStatus>
-    getPersonByID(id:string): IPerson | null;
+    getPersonByID(id: string): IPerson | null
     getPersons(): IPerson[]
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>): void
     update(): void
-    getUserById(id:string): Promise<IPerson | null>
+    getUserById(id: string): Promise<IPerson | null>
     getPersonDataByIdAsync(id: string): Promise<{
         userData: TUserData | null
         details: {
@@ -85,17 +85,16 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return ApplicationSingletoneFacade.instance
     }
 
-    getPersonByID(id:string): IPerson | null {
-        
-        const users = this.usersPool.filter(user => {
-            return user.getId() === id;
-        });
+    getPersonByID(id: string): IPerson | null {
+        const users = this.usersPool.filter((user) => {
+            return user.getId() === id
+        })
 
         if (users.length > 1) {
-            throw new Error(`Internal error: multiple users found for ID ${id}`);
+            throw new Error(`Internal error: multiple users found for ID ${id}`)
         }
 
-        return users.length ? users[0] : null;
+        return users.length ? users[0] : null
     }
 
     async addUserRequirement({
@@ -107,21 +106,25 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         userId,
         value,
     }: IRequirementFields): Promise<IPerson> {
-        
-        const user = await this.getUserById(userId);
+        const user = await this.getUserById(userId)
 
-        if (user === null) throw new Error('user by id is not exists');
+        if (user === null) throw new Error('user by id is not exists')
 
-        const factory = new RequiremenCommandFactory();
-        const requirement = factory.create(value , title , description , dateToExecute , cashFlowDirectionCode);
+        const factory = new RequiremenCommandFactory()
+        const requirement = factory.create(
+            value,
+            title,
+            description,
+            dateToExecute,
+            cashFlowDirectionCode
+        )
 
-        if (requirement === null) throw new Error('problems with requirement creation');
+        if (requirement === null)
+            throw new Error('problems with requirement creation')
 
-        user.addRequirementCommand(requirement);
+        user.addRequirementCommand(requirement)
 
-
-        return user;
-
+        return user
     }
 
     checkUserAuth(id: string): TAuthServiceCheckTokenResponse {
@@ -198,14 +201,12 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             const userNameOfUserOfPool = userOfThePool.getUserName()
 
             if (userNameOfUserOfPool === username) {
-
                 return null
             }
 
             const userIdOfUserOfPool = userOfThePool.getId()
 
             if (userIdOfUserOfPool === userId) {
-
                 return null
             }
         }
@@ -263,14 +264,13 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     }
 
     async getUserById(id: string): Promise<IPerson | null> {
-        
-        const users = this.usersPool.filter(user => user.getId() === id);
-        
+        const users = this.usersPool.filter((user) => user.getId() === id)
+
         if (users.length > 1) {
-            throw new Error('Internal error : multiple users by id');
+            throw new Error('Internal error : multiple users by id')
         }
 
-        return users.length > 0 ? users[0] : null;
+        return users.length > 0 ? users[0] : null
     }
 
     async getPersonDataByIdAsync(id: string): Promise<{
@@ -300,17 +300,17 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             ? {
                   userName: users[0].getUserName(),
                   wallet: users[0].getWalletBalance(),
-                id: users[0].getId(),
-                requirements: [
-                    {
-                        date: 203948203909,
-                        description: '',
-                        isExecuted: false,
-                        title: 'tilese',
-                        transactionTypeCode: 0,
-                        value:456456,
-                      }
-                  ]
+                  id: users[0].getId(),
+                  requirements: [
+                      {
+                          date: 203948203909,
+                          description: '',
+                          isExecuted: false,
+                          title: 'tilese',
+                          transactionTypeCode: 0,
+                          value: 456456,
+                      },
+                  ],
               }
             : null
 
@@ -417,10 +417,9 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                     )
                 })
             ).then((resolves) => {
-            
                 resolves.forEach((elem) => {
                     this.usersPool.push(elem.subj)
-                    console.log(elem.subj.getId() , elem.subj.getUserName());
+                    console.log(elem.subj.getId(), elem.subj.getUserName())
                 })
             })
         })

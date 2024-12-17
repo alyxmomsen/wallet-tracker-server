@@ -54,11 +54,11 @@ export abstract class Person implements IPerson {
     // getData(): IUserStats {
 
     //     const v: IUserStats = {
-    //         name: '', 
+    //         name: '',
     //         wallet: 0
     //     }
 
-    //     return 
+    //     return
     // }
 
     getId(): string {

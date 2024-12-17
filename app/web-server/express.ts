@@ -25,7 +25,7 @@ export type TUserData = {
     userName: string
     wallet: number
     id: string
-    requirements:TRequirementStats[]
+    requirements: TRequirementStats[]
 }
 
 export type TDBUserData = {
@@ -185,7 +185,6 @@ webApp.post('/auth', async (req: Request, res: Response) => {
     const { userName: username, password } = body
 
     if (username === undefined || password === undefined) {
-
         return res.status(400).json({
             payload: null,
             status: {
@@ -272,7 +271,6 @@ webApp.post('/registration', async (req: Request, res: Response) => {
     const { userName, password } = body
 
     if (userName === undefined || password === undefined) {
-
         return res.status(400).json({
             details: 'no username or no password',
         })
@@ -348,17 +346,17 @@ webApp.post('/get-user-protected', async (req: Request, res: Response) => {
         payload: userData
             ? {
                   userName: userData.userName,
-                wallet: userData.wallet,
-                requirements: [
-                    {
-                        date: 1231231231,
-                        description: 'no nononono',
-                        isExecuted: false,
-                        title: 'tilte',
-                        transactionTypeCode: 0,
-                        value:200000
-                    }
-                ]
+                  wallet: userData.wallet,
+                  requirements: [
+                      {
+                          date: 1231231231,
+                          description: 'no nononono',
+                          isExecuted: false,
+                          title: 'tilte',
+                          transactionTypeCode: 0,
+                          value: 200000,
+                      },
+                  ],
               }
             : null,
     }
@@ -385,8 +383,6 @@ webApp.post(
 
         const { body } = req
 
-
-
         // if (body === undefined) {
         //     res.status(500).json({
         //         foo: 'bar',
@@ -408,7 +404,7 @@ webApp.post(
             const requirements =
                 await myApplication.getPersonRequirementsAsync(userId)
 
-        res.status(200).json({
+            res.status(200).json({
                 status: {
                     code: 0,
                     details: 'requirements',
@@ -416,7 +412,7 @@ webApp.post(
                 payload: requirements,
             } as TResponseJSONData<TRequirementStats[]>)
         } catch (e) {
-            console.log({e});
+            console.log({ e })
             res.status(500).json({
                 status: {
                     code: 1,
@@ -441,8 +437,7 @@ export interface IRequirementFields {
 webApp.post(
     '/add-user-requirements-protected',
     async (req: Request, res: Response) => {
-
-        console.log({body:'body body body'});
+        console.log({ body: 'body body body' })
 
         addRequirementsBodyValidatorService.execute(req, res)
 
@@ -457,7 +452,6 @@ webApp.post(
                 },
             } as TResponseJSONData<null>)
         }
-
 
         // check headers the x-auth
 
@@ -474,27 +468,25 @@ webApp.post(
         }
 
         try {
+            const updatedUser = await myApplication.addUserRequirement({
+                ...body,
+                userId: xAuth,
+            })
 
-
-            const updatedUser = await myApplication.addUserRequirement({ ...body , userId:xAuth });
-            
             return res.status(200).json({
                 payload: {
                     id: updatedUser.getId(),
                     userName: updatedUser.getUserName(),
                     wallet: updatedUser.getWalletBalance(),
-                    requirements: [
-                        
-                    ]
+                    requirements: [],
                 },
                 status: {
                     code: 0,
                     details: 'details',
                 },
             } as TResponseJSONData<TUserData>)
-        }
-        catch (error) {
-            console.log({error});
+        } catch (error) {
+            console.log({ error })
             return res.status(500).json({
                 payload: null,
                 status: {
@@ -502,7 +494,6 @@ webApp.post(
                     details: error,
                 },
             } as TResponseJSONData<null>)
-            
         }
     }
 )
