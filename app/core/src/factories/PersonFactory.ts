@@ -29,7 +29,6 @@ export abstract class PersonFactory implements IPersonFactory {
         const userId = result.userData?.id
 
         if (userId === undefined) {
-            console.log('something wrong')
             return null
         }
 

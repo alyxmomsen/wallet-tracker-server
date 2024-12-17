@@ -60,8 +60,6 @@ webApp.post('/check-user-auth-protected-ep', (req: Request, res: Response) => {
 
     const xAuth = headers['x-auth']
 
-    console.log({ xAuth })
-
     if (typeof xAuth !== 'string') {
         return res.status(500).json({
             payload: null,
@@ -186,7 +184,7 @@ webApp.post('/auth', async (req: Request, res: Response) => {
     const { userName: username, password } = body
 
     if (username === undefined || password === undefined) {
-        console.log({ body })
+
         return res.status(400).json({
             payload: null,
             status: {
@@ -273,7 +271,7 @@ webApp.post('/registration', async (req: Request, res: Response) => {
     const { userName, password } = body
 
     if (userName === undefined || password === undefined) {
-        console.log({ body })
+
         return res.status(400).json({
             details: 'no username or no password',
         })
@@ -376,7 +374,7 @@ webApp.post(
 
         const { body } = req
 
-        console.log({ userId, body })
+
 
         // if (body === undefined) {
         //     res.status(500).json({
@@ -398,9 +396,8 @@ webApp.post(
         try {
             const requirements =
                 await myApplication.getPersonRequirementsAsync(userId)
-            console.log({ requirements })
 
-            res.status(200).json({
+        res.status(200).json({
                 status: {
                     code: 0,
                     details: 'requirements',
@@ -408,6 +405,7 @@ webApp.post(
                 payload: requirements,
             } as TResponseJSONData<TRequirementStats[]>)
         } catch (e) {
+            console.log({e});
             res.status(500).json({
                 status: {
                     code: 1,
@@ -464,8 +462,6 @@ webApp.post(
             } as TResponseJSONData<null>)
         }
 
-        console.log('try try' , body);
-
         try {
 
 
@@ -484,8 +480,7 @@ webApp.post(
             } as TResponseJSONData<TUserData>)
         }
         catch (error) {
-            console.log(error);
-
+            console.log({error});
             return res.status(500).json({
                 payload: null,
                 status: {

@@ -162,8 +162,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             return new Promise((res, rej) => res([]))
         }
 
-        console.log({ users })
-
         const requirements: TRequirementStats[] = users[0]
             .getAllReauirementCommands()
             .map((requirement) => {
@@ -200,7 +198,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             const userNameOfUserOfPool = userOfThePool.getUserName()
 
             if (userNameOfUserOfPool === username) {
-                console.log('username is fail')
 
                 return null
             }
@@ -208,7 +205,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             const userIdOfUserOfPool = userOfThePool.getId()
 
             if (userIdOfUserOfPool === userId) {
-                console.log('user id is fail')
 
                 return null
             }
@@ -245,9 +241,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         if (newUser) {
             this.usersPool.push(newUser)
-            console.log(
-                'new user added into the pool: ' + newUser.getUserName()
-            )
+
             return {
                 status: true,
                 message: 'user created succesfully',
@@ -270,8 +264,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
     async getUserById(id: string): Promise<IPerson | null> {
         
-        console.log({userID:id});
-
         const users = this.usersPool.filter(user => user.getId() === id);
         
         if (users.length > 1) {
@@ -303,8 +295,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                 },
             }
         }
-
-        console.log('get person by id:', users)
 
         const userData: TUserData | null = users.length
             ? {
