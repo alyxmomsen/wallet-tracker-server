@@ -3,6 +3,7 @@ import { authService, myApplication } from '..'
 import { TWalletData } from '../db/app'
 import { TRequirementStats } from '../core/src/requirement-command/RequirementCommand'
 import { AddRequirementsBodyValidator } from './services/body-check-service'
+import { AddUserRequirementService, IAddUserRequirementService } from './services/add-user-requirement-service'
 
 const bodyParser = require('body-parser')
 const express = require('express')
@@ -437,6 +438,9 @@ export interface IRequirementFields {
 webApp.post(
     '/add-user-requirements-protected',
     async (req: Request, res: Response) => {
+
+        const service: IAddUserRequirementService = new AddUserRequirementService();
+
         console.log({ body: 'body body body' })
 
         addRequirementsBodyValidatorService.execute(req, res)
@@ -468,23 +472,11 @@ webApp.post(
         }
 
         try {
-            const updatedUser = await myApplication.addUserRequirement({
-                ...body,
-                userId: xAuth,
-            })
 
-            return res.status(200).json({
-                payload: {
-                    id: updatedUser.getId(),
-                    userName: updatedUser.getUserName(),
-                    wallet: updatedUser.getWalletBalance(),
-                    requirements: [],
-                },
-                status: {
-                    code: 0,
-                    details: 'details',
-                },
-            } as TResponseJSONData<TUserData>)
+            const updatedUserData = await service.execute(myApplication , body , xAuth);
+
+            return res.status(200).json(updatedUserData);
+
         } catch (error) {
             console.log({ error })
             return res.status(500).json({
