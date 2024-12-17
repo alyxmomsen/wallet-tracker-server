@@ -3,7 +3,10 @@ import { authService, myApplication } from '..'
 import { TWalletData } from '../db/app'
 import { TRequirementStats } from '../core/src/requirement-command/RequirementCommand'
 import { AddRequirementsBodyValidator } from './services/body-check-service'
-import { AddUserRequirementService, IAddUserRequirementService } from './services/add-user-requirement-service'
+import {
+    AddUserRequirementService,
+    IAddUserRequirementService,
+} from './services/add-user-requirement-service'
 
 const bodyParser = require('body-parser')
 const express = require('express')
@@ -438,8 +441,8 @@ export interface IRequirementFields {
 webApp.post(
     '/add-user-requirements-protected',
     async (req: Request, res: Response) => {
-
-        const service: IAddUserRequirementService = new AddUserRequirementService();
+        const service: IAddUserRequirementService =
+            new AddUserRequirementService()
 
         console.log({ body: 'body body body' })
 
@@ -472,11 +475,13 @@ webApp.post(
         }
 
         try {
+            const updatedUserData = await service.execute(
+                myApplication,
+                body,
+                xAuth
+            )
 
-            const updatedUserData = await service.execute(myApplication , body , xAuth);
-
-            return res.status(200).json(updatedUserData);
-
+            return res.status(200).json(updatedUserData)
         } catch (error) {
             console.log({ error })
             return res.status(500).json({
