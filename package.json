@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "main": "server.js",
     "scripts": {
+        "cmt-amend":"git add . && git commit --amend" ,
         "cmt": "git add . && git commit -m\"critical point\"",
         "cmt--update": "git add . && git commit -m\"critical point\"",
         "push": "git push origin master",

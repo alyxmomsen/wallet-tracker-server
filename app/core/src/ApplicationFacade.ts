@@ -12,7 +12,7 @@ import {
 } from './person/Person'
 
 import { ITask } from './Task'
-import { TUserData } from '../../web-server/express'
+import { IRequirementFields, TUserData } from '../../web-server/express'
 
 import {
     IRequirementCommand,
@@ -23,8 +23,18 @@ import {
     IAuthService,
     TAuthServiceCheckTokenResponse,
 } from './auth-service/AuthService'
+import { myApplication } from '../..'
 
 export interface IApplicationFacade {
+    addUserRequirement({
+        cashFlowDirectionCode,
+        dateToExecute,
+        description,
+        isExecuted,
+        title,
+        userId,
+        value,
+    }: IRequirementFields): Promise<any>
     addUserIntoThePool(
         username: string,
         password: string,
@@ -71,6 +81,47 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         }
 
         return ApplicationSingletoneFacade.instance
+    }
+
+    async addUserRequirement({
+        cashFlowDirectionCode,
+        dateToExecute,
+        description,
+        isExecuted,
+        title,
+        userId,
+        value,
+    }: IRequirementFields): Promise<any> {
+        const users = this.usersPool.filter((user) => user.getId() === userId)
+
+        if (users.length > 1) {
+            new Error('user no one')
+            return 1
+        }
+
+        if (users.length > 0) {
+            const newRequrement = new RequiremenCommandFactory().create(
+                value,
+                title,
+                description,
+                dateToExecute,
+                cashFlowDirectionCode
+            )
+
+            if (newRequrement) {
+                users[0].addRequirementCommand(newRequrement)
+
+                console.log({ myApplication })
+
+                return
+            } else {
+                return 0
+            }
+        } else {
+            this.dataBaseConnector.getPersonById(userId)
+            // handle case
+            return 0
+        }
     }
 
     checkUserAuth(id: string): TAuthServiceCheckTokenResponse {

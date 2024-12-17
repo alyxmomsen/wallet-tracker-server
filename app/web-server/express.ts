@@ -168,11 +168,11 @@ webApp.post('/auth', async (req: Request, res: Response) => {
                 code: 1,
                 details: 'no body object',
             },
-            payload: null
+            payload: null,
         } as {
             payload: {
                 userId: string
-            } | null;
+            } | null
             status: {
                 code: number
                 details: string
@@ -188,12 +188,12 @@ webApp.post('/auth', async (req: Request, res: Response) => {
             payload: null,
             status: {
                 code: 2,
-                details:"no username or no password" ,
-            }
+                details: 'no username or no password',
+            },
         } as {
             payload: {
                 userId: string
-            } | null;
+            } | null
             status: {
                 code: number
                 details: string
@@ -210,12 +210,12 @@ webApp.post('/auth', async (req: Request, res: Response) => {
             payload: null,
             status: {
                 code: 3,
-                details:"user is not exists" ,
-            }
+                details: 'user is not exists',
+            },
         } as {
             payload: {
                 userId: string
-            } | null;
+            } | null
             status: {
                 code: number
                 details: string
@@ -229,13 +229,13 @@ webApp.post('/auth', async (req: Request, res: Response) => {
         return res.status(400).json({
             payload: null,
             status: {
-                code:4,
-                details:"user is not exists" ,
-            }
+                code: 4,
+                details: 'user is not exists',
+            },
         } as {
             payload: {
                 userId: string
-            } | null;
+            } | null
             status: {
                 code: number
                 details: string
@@ -416,6 +416,16 @@ webApp.post(
     }
 )
 
+export interface IRequirementFields {
+    cashFlowDirectionCode: number
+    dateToExecute: number
+    description: string
+    isExecuted: boolean
+    title: string
+    userId: string
+    value: number
+}
+
 webApp.post(
     '/add-user-requirements-protected',
     async (req: Request, res: Response) => {
@@ -426,17 +436,60 @@ webApp.post(
                 payload: null,
                 status: {
                     code: 1,
-                    details: 'internal error',
+                    details: 'internal error , no body',
                 },
             } as TResponseJSONData<null>)
         }
 
-        const { requirements } = body as {
-            requirements: TRequirementStats[]
-        }
-
         // Добавляем реквайерменты
 
+        const xAuth = req.headers['x-auth']
+
+        console.log({ body, xAuth })
+
+        if (typeof xAuth !== 'string') {
+            return res.status(500).json({
+                payload: null,
+                status: {
+                    code: 2,
+                    details: 'auth header data error',
+                },
+            } as TResponseJSONData<null>)
+        }
+
+        const user = await myApplication.getPersonByIdAsync(xAuth)
+
+        if (user.userData === null) {
+            return res.status(400).json({
+                payload: null,
+                status: {
+                    code: 2,
+                    details: 'user is not exists',
+                },
+            } as TResponseJSONData<null>)
+        }
+
+        const {
+            cashFlowDirectionCode,
+            dateToExecute,
+            description,
+            isExecuted,
+            title,
+            userId,
+            value,
+        } = body
+
+        myApplication.addUserRequirement({
+            cashFlowDirectionCode,
+            dateToExecute,
+            description,
+            isExecuted,
+            title,
+            userId,
+            value,
+        })
+
+        // myApplication.checkUserAuth();
         // возвращаем отчет
 
         const response: TResponseJSONData<{}> = {
