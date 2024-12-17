@@ -300,7 +300,17 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             ? {
                   userName: users[0].getUserName(),
                   wallet: users[0].getWalletBalance(),
-                  id: users[0].getId(),
+                id: users[0].getId(),
+                requirements: [
+                    {
+                        date: 203948203909,
+                        description: '',
+                        isExecuted: false,
+                        title: 'tilese',
+                        transactionTypeCode: 0,
+                        value:456456,
+                      }
+                  ]
               }
             : null
 

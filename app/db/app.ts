@@ -277,6 +277,9 @@ async function getPersonsByIdFireBase(
     return {
         userName: username,
         id: userId,
+        requirements: [
+            
+        ]
     }
 }
 
@@ -356,6 +359,7 @@ async function getAllFireStoreDocs(
             users.push({
                 userName: username,
                 id,
+                requirements:[]
             })
         }
     })

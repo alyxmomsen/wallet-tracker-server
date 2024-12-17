@@ -25,6 +25,7 @@ export type TUserData = {
     userName: string
     wallet: number
     id: string
+    requirements:TRequirementStats[]
 }
 
 export type TDBUserData = {
@@ -347,7 +348,17 @@ webApp.post('/get-user-protected', async (req: Request, res: Response) => {
         payload: userData
             ? {
                   userName: userData.userName,
-                  wallet: userData.wallet,
+                wallet: userData.wallet,
+                requirements: [
+                    {
+                        date: 1231231231,
+                        description: 'no nononono',
+                        isExecuted: false,
+                        title: 'tilte',
+                        transactionTypeCode: 0,
+                        value:200000
+                    }
+                ]
               }
             : null,
     }
@@ -471,7 +482,10 @@ webApp.post(
                 payload: {
                     id: updatedUser.getId(),
                     userName: updatedUser.getUserName(),
-                    wallet:updatedUser.getWalletBalance(),
+                    wallet: updatedUser.getWalletBalance(),
+                    requirements: [
+                        
+                    ]
                 },
                 status: {
                     code: 0,
