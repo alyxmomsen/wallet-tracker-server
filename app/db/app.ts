@@ -18,6 +18,7 @@ import {
     DocumentReference,
 } from 'firebase/firestore'
 import { TDBUserData, TUserData } from '../web-server/express'
+import { IRequirementStatsType } from '../core/src/types/commonTypes'
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -50,6 +51,10 @@ export type TDatabaseResultStatus = {
 }
 
 export interface IDataBaseConnector {
+    addUserRequirement(
+        data: Omit<IRequirementStatsType, 'isExecuted' | 'id'>,
+        userId: string
+    ): Promise<IRequirementStatsType | null>
     getPersonByFields(
         username: string,
         password: string
@@ -59,7 +64,7 @@ export interface IDataBaseConnector {
         password: string
     ): Promise<TDatabaseResultStatus>
     getAllPersons(): Promise<Omit<TUserData, 'wallet'>[]>
-    getRequiremntsByUserId(userId: string): Promise<TRequrementsDataBaseType[]>
+    getRequiremntsByUserId(userId: string): Promise<IRequirementStatsType[]>
     getPersonById(id: string): Promise<Omit<TUserData, 'wallet'> | null>
     getDataAsync(): Promise<any>
     getPersonWalletByUserId(id: string): Promise<TWalletData[]>
@@ -96,6 +101,21 @@ export type TWalletDBData = {
 }
 
 export class FirebaseConnector implements IDataBaseConnector {
+    async addUserRequirement(
+        fields: Omit<IRequirementStatsType, 'isExecuted' | 'id'>,
+        userId: string
+    ): Promise<IRequirementStatsType | null> {
+        console.log('>>> try to add insert the requrement into DB')
+
+        const newRequirementFields = await addUserRequirementIntoFireStore(
+            { ...fields },
+            userId
+        )
+
+        console.log(`>>> result: `, newRequirementFields)
+
+        return newRequirementFields
+    }
     async getPersonWalletByUserId(id: string): Promise<TWalletData[]> {
         const qwery = query(
             collection(db, 'wallets'),
@@ -220,12 +240,12 @@ export class FirebaseConnector implements IDataBaseConnector {
     }
 
     async getAllPersons(): Promise<Omit<TUserData, 'wallet'>[]> {
-        return await getAllFireStoreDocs('persons')
+        return await getAllFireStorePersonDocs('persons')
     }
 
     async getRequiremntsByUserId(
         userId: string
-    ): Promise<TRequrementsDataBaseType[]> {
+    ): Promise<IRequirementStatsType[]> {
         return await getUserRequirementsByUserId(userId)
     }
 
@@ -234,7 +254,7 @@ export class FirebaseConnector implements IDataBaseConnector {
 
 async function getUserRequirementsByUserId(
     id: string
-): Promise<TRequrementsDataBaseType[]> {
+): Promise<IRequirementStatsType[]> {
     const userIdFildName = 'userId'
 
     const qwery = query(
@@ -250,9 +270,14 @@ async function getUserRequirementsByUserId(
         return []
     }
 
-    const requirements = docsSnapshot.docs.map(
-        (elem) => elem.data() as TRequrementsDataBaseType
-    )
+    const requirements = docsSnapshot.docs.map((elem) => {
+        const id = elem.id
+        const requirementFields = elem.data() as Omit<
+            IRequirementStatsType,
+            'id'
+        >
+        return { ...requirementFields, id }
+    })
 
     return requirements
 }
@@ -277,7 +302,7 @@ async function getPersonsByIdFireBase(
     return {
         userName: username,
         id: userId,
-        requirements: [],
+        // requirements: [],
     }
 }
 
@@ -287,9 +312,30 @@ async function addPersonIntoFireStore(username: string, password: string) {
         password,
         createdUnixDate: Date.now(),
     })
-    console.log('end the function')
 
     return docRef
+}
+
+async function addUserRequirementIntoFireStore(
+    fields: Omit<IRequirementStatsType, 'id' | 'isExecuted'>,
+    userId: string
+): Promise<IRequirementStatsType | null> {
+    const docRef = await addDoc(collection(db, 'requirements'), {
+        ...fields,
+    })
+
+    const docSnap = await getDoc(docRef)
+
+    if (!docSnap.exists()) {
+        return null
+    }
+    const documentId = docSnap.id
+    const requirementFields = docSnap.data() as Omit<
+        IRequirementStatsType,
+        'id'
+    >
+
+    return { ...requirementFields, id: documentId }
 }
 
 async function checkRecordExists(recordId: string) {
@@ -331,7 +377,7 @@ async function checkRecordExistsByField(
     }
 }
 
-async function getAllFireStoreDocs(
+async function getAllFireStorePersonDocs(
     collectionName: string
 ): Promise<Omit<TUserData, 'wallet'>[]> {
     const qwery = query(
@@ -357,7 +403,7 @@ async function getAllFireStoreDocs(
             users.push({
                 userName: username,
                 id,
-                requirements: [],
+                // requirements: [],
             })
         }
     })

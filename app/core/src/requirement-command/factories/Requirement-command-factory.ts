@@ -1,3 +1,4 @@
+import { IRequirementStatsType } from '../../types/commonTypes'
 import {
     DecrementMoneyRequirementCommand,
     IncrementMoneyRequirementCommand,
@@ -9,27 +10,23 @@ export interface IRequirementCommandFactory {
 }
 
 export class RequiremenCommandFactory {
-    create(
-        value: number,
-        title: string,
-        description: string,
-        date: number,
-        transactionDirection: number
-    ): IRequirementCommand | null {
-        switch (transactionDirection) {
+    create(fields: IRequirementStatsType): IRequirementCommand | null {
+        switch (fields.cashFlowDirectionCode) {
             case 0:
                 return new IncrementMoneyRequirementCommand(
-                    value,
-                    title,
-                    description,
-                    date
+                    fields.id,
+                    fields.value,
+                    fields.title,
+                    fields.description,
+                    fields.dateToExecute
                 )
             case 1:
                 return new DecrementMoneyRequirementCommand(
-                    value,
-                    title,
-                    description,
-                    date
+                    fields.id,
+                    fields.value,
+                    fields.title,
+                    fields.description,
+                    fields.dateToExecute
                 )
             default:
                 return null

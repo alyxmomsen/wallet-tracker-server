@@ -12,7 +12,6 @@ export class Observer implements IObserver {
     update() {
         this.callbacks.forEach((cb) => {
             cb()
-            // console.log('callback');
         })
     }
 

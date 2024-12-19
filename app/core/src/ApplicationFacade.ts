@@ -24,6 +24,7 @@ import {
     TAuthServiceCheckTokenResponse,
 } from './auth-service/AuthService'
 import { myApplication } from '../..'
+import { IRequirementStatsType } from './types/commonTypes'
 
 export interface IApplicationFacade {
     addUserRequirement({
@@ -56,7 +57,7 @@ export interface IApplicationFacade {
             description: string
         }
     }>
-    getPersonRequirementsAsync(id: string): Promise<TRequirementStats[]>
+    getPersonRequirementsAsync(id: string): IRequirementStatsType[]
     getWalletsByUserIdIdAsync(id: string): Promise<TWalletData[]>
     checkUserAuth(id: string): TAuthServiceCheckTokenResponse
 }
@@ -97,32 +98,57 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return users.length ? users[0] : null
     }
 
-    async addUserRequirement({
-        cashFlowDirectionCode,
-        dateToExecute,
-        description,
-        isExecuted,
-        title,
-        userId,
-        value,
-    }: IRequirementFields): Promise<IPerson> {
-        const user = await this.getUserById(userId)
+    async addUserRequirement(
+        requirementFields: Omit<IRequirementFields, 'isExecuted'>
+    ): Promise<IPerson | null> {
+        console.log(`>>> check if user pool contain user by this ID`)
 
-        if (user === null) throw new Error('user by id is not exists')
+        const user = await this.getUserById(requirementFields.userId)
 
-        const factory = new RequiremenCommandFactory()
-        const requirement = factory.create(
-            value,
-            title,
-            description,
-            dateToExecute,
-            cashFlowDirectionCode
+        if (user === null) {
+            console.log(`>>> user is not exist or something wrong`)
+
+            return null
+        }
+
+        console.log(`>>> user is exist`)
+
+        // если юзер существует,
+        // то нужно добавить реквайермент в дата бейс,
+        //  что бы получить requirement ID
+
+        console.log(
+            `>>> try to add user-requirement into DB and get requirement Id...`
         )
 
-        if (requirement === null)
-            throw new Error('problems with requirement creation')
+        const newReqFields = await this.dataBaseConnector.addUserRequirement(
+            { ...requirementFields },
+            requirementFields.userId
+        )
 
+        if (newReqFields === null) {
+            console.log(`>>> try to add requirement into data base  is FAILED`)
+
+            return null
+        }
+
+        console.log(`>>> requirement added into Data Base , SUCCESSFULLY`)
+
+        const reqquirementfactory = new RequiremenCommandFactory()
+
+        console.log(`>>> trying to make requirement...`)
+
+        const requirement = reqquirementfactory.create({ ...newReqFields })
+
+        if (requirement === null) {
+            console.log(`>>> requirement is NOT CREATED !!!`)
+            return null
+        }
+
+        console.log(`>>> requirement is CREATED`)
         user.addRequirementCommand(requirement)
+
+        console.log(`>>> user object were trying mutating`)
 
         return user
     }
@@ -147,7 +173,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     //     return new Promise(() => {});
     // }
 
-    getPersonRequirementsAsync(id: string): Promise<TRequirementStats[]> {
+    getPersonRequirementsAsync(id: string): IRequirementStatsType[] {
         const users: IPerson[] = []
 
         for (const user of this.usersPool) {
@@ -162,32 +188,33 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         if (usersLength > 1) {
             new Error('users by id length are no one: ' + users.length)
-            return new Promise((res, rej) => res([]))
+            return []
         }
 
-        const requirements: TRequirementStats[] = users[0]
+        const requirements: IRequirementStatsType[] = users[0]
             .getAllReauirementCommands()
             .map((requirement) => {
-                const date = requirement.getExecutionDate()
+                const dateToExecute = requirement.getExecutionDate()
                 const description = requirement.getDescription()
                 const isExecuted = requirement.checkIfExecuted()
                 const title = requirement.getTitle()
-                const transactionTypeCode = requirement.getTransactionTypeCode()
+                const cashFlowDirectionCode =
+                    requirement.getTransactionTypeCode()
                 const value = requirement.getValue()
 
                 return {
-                    date,
+                    dateToExecute,
                     description,
-                    isExecuted,
+                    cashFlowDirectionCode,
+                    id,
                     title,
-                    transactionTypeCode,
                     value,
+                    userId: id,
+                    isExecuted,
                 }
             })
 
-        return new Promise((resolve, reject) => {
-            resolve(requirements)
-        })
+        return requirements
     }
 
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>) {}
@@ -266,8 +293,10 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     async getUserById(id: string): Promise<IPerson | null> {
         const users = this.usersPool.filter((user) => user.getId() === id)
 
+        console.log('user filter: ', users)
+
         if (users.length > 1) {
-            throw new Error('Internal error : multiple users by id')
+            return null
         }
 
         return users.length > 0 ? users[0] : null
@@ -296,21 +325,14 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             }
         }
 
-        const userData: TUserData | null = users.length
+        const userData:
+            | (TUserData & { requirements: IRequirementStatsType[] })
+            | null = users.length
             ? {
                   userName: users[0].getUserName(),
                   wallet: users[0].getWalletBalance(),
                   id: users[0].getId(),
-                  requirements: [
-                      {
-                          date: 203948203909,
-                          description: '',
-                          isExecuted: false,
-                          title: 'tilese',
-                          transactionTypeCode: 0,
-                          value: 456456,
-                      },
-                  ],
+                  requirements: [],
               }
             : null
 
@@ -330,7 +352,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         personFactory: IPersonFactory,
         authService: IAuthService
     ) {
-        console.log('application started at ' + new Date().toLocaleTimeString())
         this.authService = authService
         this.dataBaseConnector = dataBaseConnector
         this.personFactory = personFactory
@@ -377,32 +398,22 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                                     dataBaseConnector
                                         .getRequiremntsByUserId(userId)
                                         .then((response) => {
-                                            response.forEach((elem) => {
-                                                const {
-                                                    value,
-                                                    title,
-                                                    description,
-                                                    dateToExecute: date,
-                                                    cashFlowDirectionCode:
-                                                        transactionDirection,
-                                                    userId,
-                                                } = elem
+                                            response.forEach(
+                                                (requirementFields) => {
+                                                    const requirement =
+                                                        requirementFactory.create(
+                                                            {
+                                                                ...requirementFields,
+                                                            }
+                                                        )
 
-                                                const requirement =
-                                                    requirementFactory.create(
-                                                        value,
-                                                        title,
-                                                        description,
-                                                        date,
-                                                        transactionDirection
-                                                    )
-
-                                                if (requirement) {
-                                                    newUser.addRequirementCommand(
-                                                        requirement
-                                                    )
+                                                    if (requirement) {
+                                                        newUser.addRequirementCommand(
+                                                            requirement
+                                                        )
+                                                    }
                                                 }
-                                            })
+                                            )
 
                                             resolve('bar')
                                         })
@@ -419,9 +430,10 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             ).then((resolves) => {
                 resolves.forEach((elem) => {
                     this.usersPool.push(elem.subj)
-                    console.log(elem.subj.getId(), elem.subj.getUserName())
                 })
             })
+
+            console.log('>>> APPLICATION CONSTRUCTED')
         })
     }
 }

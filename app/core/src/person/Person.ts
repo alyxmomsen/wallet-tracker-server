@@ -1,5 +1,5 @@
 import { IRequirementCommand } from '../requirement-command/RequirementCommand'
-import { IWallet, Wallet } from '../Wallet'
+import { IWallet, IWallet as number, Wallet } from '../Wallet'
 import { GoingSleepStatus, IPersonStatusSystem } from './PersonStatus'
 
 export type TStatus = {
@@ -17,7 +17,7 @@ export type TWalletTrackValue = {
 
 export interface IUserStats {
     name: string
-    wallet: IWallet
+    wallet: number
 }
 
 export interface IPerson {

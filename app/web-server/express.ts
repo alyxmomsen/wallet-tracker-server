@@ -7,6 +7,9 @@ import {
     AddUserRequirementService,
     IAddUserRequirementService,
 } from './services/add-user-requirement-service'
+import { IRequirementStatsType } from '../core/src/types/commonTypes'
+import { Console } from 'console'
+import { IUserStats } from '../core/src/person/Person'
 
 const bodyParser = require('body-parser')
 const express = require('express')
@@ -29,7 +32,7 @@ export type TUserData = {
     userName: string
     wallet: number
     id: string
-    requirements: TRequirementStats[]
+    // requirements: TRequirementStats[]
 }
 
 export type TDBUserData = {
@@ -308,9 +311,9 @@ webApp.post('/registration', async (req: Request, res: Response) => {
 })
 
 webApp.post('/get-user-protected', async (req: Request, res: Response) => {
-    const token = req.headers['x-auth']
+    const xAuth = req.headers['x-auth']
 
-    if (typeof token !== 'string') {
+    if (typeof xAuth !== 'string') {
         const responseData: TResponseJSONData<TUserData> = {
             status: {
                 code: 1,
@@ -322,9 +325,9 @@ webApp.post('/get-user-protected', async (req: Request, res: Response) => {
         return res.status(300).json(responseData)
     }
 
-    const userDataResponse = await myApplication.getPersonDataByIdAsync(token)
+    const userDataResponse = await myApplication.getPersonDataByIdAsync(xAuth)
 
-    // console.log({userDataResponse});
+    //
 
     const responseStatusCode = userDataResponse.details.code
 
@@ -342,7 +345,21 @@ webApp.post('/get-user-protected', async (req: Request, res: Response) => {
 
     const userData = userDataResponse.userData
 
-    const responseData: TResponseJSONData<Omit<TUserData, 'id'>> = {
+    if (userData === null) {
+        res.status(400).json({
+            payload: null,
+            status: {
+                code: 2342,
+                details: 'no data or ...',
+            },
+        } as TResponseJSONData<Omit<TUserData, 'id'>>)
+    }
+
+    const requirements = await myApplication.getPersonRequirementsAsync(xAuth)
+
+    const responseData: TResponseJSONData<
+        Omit<TUserData, 'id'> & { requirements: IRequirementStatsType[] }
+    > = {
         status: {
             code: 0,
             details: 'user data',
@@ -351,16 +368,7 @@ webApp.post('/get-user-protected', async (req: Request, res: Response) => {
             ? {
                   userName: userData.userName,
                   wallet: userData.wallet,
-                  requirements: [
-                      {
-                          date: 1231231231,
-                          description: 'no nononono',
-                          isExecuted: false,
-                          title: 'tilte',
-                          transactionTypeCode: 0,
-                          value: 200000,
-                      },
-                  ],
+                  requirements,
               }
             : null,
     }
@@ -414,7 +422,7 @@ webApp.post(
                     details: 'requirements',
                 },
                 payload: requirements,
-            } as TResponseJSONData<TRequirementStats[]>)
+            } as TResponseJSONData<IRequirementStatsType[]>)
         } catch (e) {
             console.log({ e })
             res.status(500).json({
@@ -429,6 +437,7 @@ webApp.post(
 )
 
 export interface IRequirementFields {
+    id: string
     cashFlowDirectionCode: number
     dateToExecute: number
     description: string
@@ -441,10 +450,8 @@ export interface IRequirementFields {
 webApp.post(
     '/add-user-requirements-protected',
     async (req: Request, res: Response) => {
-        const service: IAddUserRequirementService =
+        const addRequirementService: IAddUserRequirementService =
             new AddUserRequirementService()
-
-        console.log({ body: 'body body body' })
 
         addRequirementsBodyValidatorService.execute(req, res)
 
@@ -475,13 +482,50 @@ webApp.post(
         }
 
         try {
-            const updatedUserData = await service.execute(
-                myApplication,
-                body,
-                xAuth
-            )
+            const updatedPerson = await myApplication.addUserRequirement({
+                ...body,
+                userId: xAuth,
+            })
 
-            return res.status(200).json(updatedUserData)
+            if (updatedPerson === null) {
+                return {
+                    payload: null,
+                    status: {
+                        code: 8973645,
+                        details: 'user is not updated',
+                    },
+                } as TResponseJSONData<null>
+            }
+
+            const requirementsAsStats: IRequirementFields[] = updatedPerson
+                .getAllReauirementCommands()
+                .map((requirement) => {
+                    return {
+                        cashFlowDirectionCode:
+                            requirement.getTransactionTypeCode(),
+                        dateToExecute: requirement.getExecutionDate(),
+                        description: requirement.getDescription(),
+                        isExecuted: requirement.checkIfExecuted(),
+                        title: requirement.getTitle(),
+                        userId: updatedPerson.getId(),
+                        value: requirement.getValue(),
+                        id: requirement.getId(),
+                    }
+                })
+
+            return res.status(200).json({
+                payload: {
+                    name: updatedPerson.getUserName(),
+                    wallet: updatedPerson.getWalletBalance(),
+                    requirements: requirementsAsStats,
+                },
+                status: {
+                    code: 0,
+                    details: 'updated user data',
+                },
+            } as TResponseJSONData<
+                IUserStats & { requirements: IRequirementFields[] }
+            >)
         } catch (error) {
             console.log({ error })
             return res.status(500).json({
@@ -533,7 +577,7 @@ function bodyValidator(req: Request) {
     // const { username, password } = body
 
     // if (username === undefined || password === undefined) {
-    //     console.log({ body })
+
     //     return res.status(400).json({
     //         details: 'no username or no password',
     //     })

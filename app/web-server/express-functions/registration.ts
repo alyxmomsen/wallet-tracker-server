@@ -14,7 +14,6 @@ export async function registration(
     //     }
     //     const { username, password } = body
     //     if (username === undefined || password === undefined) {
-    //         console.log({ body })
     //         return res.status(400).json({
     //             details: 'no username or no password',
     //         })

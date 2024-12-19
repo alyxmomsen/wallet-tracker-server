@@ -2,6 +2,7 @@ import {
     ApplicationSingletoneFacade,
     IApplicationFacade,
 } from '../../core/src/ApplicationFacade'
+import { IRequirementStatsType } from '../../core/src/types/commonTypes'
 import { TResponseJSONData, TUserData } from '../express'
 
 export interface IAddUserRequirementService {
@@ -17,13 +18,26 @@ export class AddUserRequirementService implements IAddUserRequirementService {
         app: ApplicationSingletoneFacade,
         body: any,
         userId: string
-    ): Promise<TResponseJSONData<TUserData>> {
+    ): Promise<
+        TResponseJSONData<TUserData & { requirements: IRequirementStatsType[] }>
+    > {
         try {
             const updatedUser = await app.addUserRequirement({
                 ...body,
                 userId: userId,
             })
             // TResponseJSONData<TUserData>
+
+            if (updatedUser === null) {
+                return {
+                    payload: null,
+                    status: {
+                        code: 46465,
+                        details: 'user is not created',
+                    },
+                }
+            }
+
             return {
                 payload: {
                     id: updatedUser.getId(),
@@ -31,15 +45,17 @@ export class AddUserRequirementService implements IAddUserRequirementService {
                     wallet: updatedUser.getWalletBalance(),
                     requirements: updatedUser
                         .getAllReauirementCommands()
-                        .map((require) => {
+                        .map((requirement) => {
                             return {
-                                date: require.getExecutionDate(),
-                                description: require.getDescription(),
-                                isExecuted: require.checkIfExecuted(),
-                                title: require.getTitle(),
-                                transactionTypeCode:
-                                    require.getTransactionTypeCode(),
-                                value: require.getValue(),
+                                dateToExecute: requirement.getExecutionDate(),
+                                description: requirement.getDescription(),
+                                isExecuted: requirement.checkIfExecuted(),
+                                title: requirement.getTitle(),
+                                userId: requirement.getId(),
+                                value: requirement.getValue(),
+                                cashFlowDirectionCode:
+                                    requirement.getTransactionTypeCode(),
+                                id: requirement.getId(),
                             }
                         }),
                 },
