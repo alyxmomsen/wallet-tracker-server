@@ -63,81 +63,78 @@ type TCheckUserAuthResponseData = {
     token: string
 }
 
+webApp.post(
+    '/delete-requirement-protected-ep',
+    async (req: Request, res: Response) => {
+        const log = new SimpleLogger('delete requirement route').createLogger()
 
-webApp.post('/delete-requirement-protected-ep', async (req:Request , res:Response) => {
-    
-    const log =  new SimpleLogger('delete requirement route').createLogger();
+        log('Route /delete-requirement-protected-ep')
 
-    log('Route /delete-requirement-protected-ep');
+        // const response = () => responseDataFactory<null>(null , 12))
 
-    // const response = () => responseDataFactory<null>(null , 12))
+        /* xAuth check */
 
-    /* xAuth check */
+        const xAuth = req.headers['x-auth']
 
+        // const xAuthType = typeof xAuth;
 
+        if (typeof xAuth === 'object') {
+            log('xAuth data type FAILED: ' + typeof xAuth)
 
-    const xAuth = req.headers['x-auth'];
-
-    // const xAuthType = typeof xAuth;
-
-    if (typeof xAuth === 'object') {
-        
-        log('xAuth data type FAILED: ' + typeof xAuth)
-
-        return res.status(500).json(responseDataFactory<null>(null , 15))
-    }
-
-    if (typeof xAuth === 'undefined') {
-        log('xAuth data type FAILED: ' + typeof xAuth)
-
-        return res.status(500).json(responseDataFactory<null>(null , 16))
-    }
-
-    log('xAuth data SUCCESS');
-
-    /* body check */
-
-    if (req.body === undefined || req.body === null) {
-
-        log('body FAILED');
-
-        return res.status(500).json(responseDataFactory<null>(null , 12))
-    }
-
-    const bodyData = req.body as { requirementId: string } | null | undefined;
-
-    const requirementId = bodyData?.requirementId;
-
-    if (requirementId === undefined) {
-        
-        log('no requirement id data')
-
-        return res.status(500).json(responseDataFactory<null>(null , 13));
-    }
-
-
-    log('BODY data is SUCCESS');
-
-    log('tying to delete user requirement...');
-
-    const response = await myApplication.deleteUserRequirement(requirementId , xAuth);
-
-
-    const responseData: TResponseJSONData<{ requirementId: string }> = {
-        payload: {
-            requirementId:'test string' ,
-        },
-        status: {
-            code: 0,
-            details:'successfully' ,
+            return res.status(500).json(responseDataFactory<null>(null, 15))
         }
+
+        if (typeof xAuth === 'undefined') {
+            log('xAuth data type FAILED: ' + typeof xAuth)
+
+            return res.status(500).json(responseDataFactory<null>(null, 16))
+        }
+
+        log('xAuth data SUCCESS')
+
+        /* body check */
+
+        if (req.body === undefined || req.body === null) {
+            log('body FAILED')
+
+            return res.status(500).json(responseDataFactory<null>(null, 12))
+        }
+
+        const bodyData = req.body as
+            | { requirementId: string }
+            | null
+            | undefined
+
+        const requirementId = bodyData?.requirementId
+
+        if (requirementId === undefined) {
+            log('no requirement id data')
+
+            return res.status(500).json(responseDataFactory<null>(null, 13))
+        }
+
+        log('BODY data is SUCCESS')
+
+        log('tying to delete user requirement...')
+
+        const response = await myApplication.deleteUserRequirement(
+            requirementId,
+            xAuth
+        )
+
+        const responseData: TResponseJSONData<{ requirementId: string }> = {
+            payload: {
+                requirementId: 'test string',
+            },
+            status: {
+                code: 0,
+                details: 'successfully',
+            },
+        }
+
+        res.status(200).json(responseData)
     }
-
-
-
-    res.status(200).json(responseData);
-
-});
+)
 
 webApp.post('/check-user-auth-protected-ep', (req: Request, res: Response) => {
     const headers = req.headers
@@ -433,11 +430,14 @@ webApp.post('/get-user-protected', async (req: Request, res: Response) => {
 
     const requirements = await myApplication.getPersonRequirementsAsync(xAuth)
 
-    
-    requirements.forEach(elem => {
-        
-        console.log(`>>> ROUTE get-user-protected :: requirement: userID:` + elem.userId + ' | requirement id: ' + elem.id);
-    });
+    requirements.forEach((elem) => {
+        console.log(
+            `>>> ROUTE get-user-protected :: requirement: userID:` +
+                elem.userId +
+                ' | requirement id: ' +
+                elem.id
+        )
+    })
 
     const responseData: TResponseJSONData<
         Omit<TUserData, 'id'> & { requirements: IRequirementStatsType[] }
@@ -668,12 +668,16 @@ function bodyValidator(req: Request) {
     return false
 }
 
-function responseDataFactory<T>(responseData:T , statusCode:number , details:string = 'no details'):TResponseJSONData<T> {
+function responseDataFactory<T>(
+    responseData: T,
+    statusCode: number,
+    details: string = 'no details'
+): TResponseJSONData<T> {
     return {
         payload: responseData,
         status: {
             code: statusCode,
-            details
-        }
+            details,
+        },
     }
 }

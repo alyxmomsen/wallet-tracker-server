@@ -1,7 +1,4 @@
 export class SimpleLogger {
-
-    
-
     // switchOn() {
     //     this.state = true;
     // }
@@ -12,26 +9,21 @@ export class SimpleLogger {
 
     createLogger() {
         return (value: string, force: boolean | undefined = undefined) => {
-            
             if (force === false) {
-
                 // console.log('>>>>>>>> log forced as FALSE');
-                return 
-                
+                return
             }
 
-            
-            
-
-            if(this.state || force) console.log(`>>> ${this.title} :: ${value}`);
+            if (this.state || force)
+                console.log(`>>> ${this.title} :: ${value}`)
         }
     }
 
-    protected state: boolean;
-    protected title: string;
+    protected state: boolean
+    protected title: string
 
-    constructor(title:string ,state:boolean = true) {
-        this.state = state;
-        this.title = title;
+    constructor(title: string, state: boolean = true) {
+        this.state = state
+        this.title = title
     }
 }
