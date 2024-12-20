@@ -25,6 +25,7 @@ import {
 } from './auth-service/AuthService'
 import { myApplication } from '../..'
 import { IRequirementStatsType } from './types/commonTypes'
+import { SimpleLogger } from '../../utils/SimpleLogger'
 
 export interface IApplicationFacade {
     addUserRequirement({
@@ -36,6 +37,7 @@ export interface IApplicationFacade {
         userId,
         value,
     }: IRequirementFields): Promise<any>
+    deleteUserRequirement (requirementId: string , token:string):Promise<any>
     addUserIntoThePool(
         username: string,
         password: string,
@@ -63,11 +65,75 @@ export interface IApplicationFacade {
 }
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
-    private usersPool: IPerson[]
-    private static instance: ApplicationSingletoneFacade | null = null
-    private dataBaseConnector: IDataBaseConnector
-    private authService: IAuthService
-    private personFactory: IPersonFactory
+
+    
+
+    async deleteUserRequirement(requirementId: string , token:string): Promise<any> {
+    
+        const sl = new SimpleLogger('delete user reqs');
+        const log = sl.createLogger();
+
+        log(`METHOD deleteUserRequirement STARTED`)
+        log(`arguments: ${requirementId} , ${token}`)
+
+        const response = this.checkUserAuth(token);
+
+        if (response.payload === null) {
+            log(`token failed`);
+            
+            return 
+
+        }
+
+        log(`token is successfully`);
+
+        const updatedToken = response.payload.updatedToken
+
+        const filtredPool = this.usersPool.filter(elem => {
+            
+            return elem.getId() === token;
+
+        });
+
+        if (filtredPool.length > 1 || filtredPool.length < 0) {
+
+            log('ERROR : multipe users or "VAlue < 0"');
+
+            return
+        }
+
+        if (filtredPool.length === 0) {
+
+            log('user not exist in the users pool');
+
+            return
+        }
+
+
+
+        const user = filtredPool[0];
+
+        log('checking requirements...');
+        const requirementsToDelete = user.getAllReauirementCommands().filter(elem => {
+            return requirementId === elem.getId()
+        })
+
+        if (requirementsToDelete.length > 1) {
+
+            log('MULTIPLE requirements by this ID');
+
+            return
+        }
+
+        if (requirementsToDelete.length === 0) {
+            
+            log('no requirements like this ID');
+        }
+
+        log('METHOD deleteUserRequirement END');
+
+
+    }
 
     static Instance(
         dataBaseConnector: IDataBaseConnector,
@@ -147,16 +213,16 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         console.log(`>>> requirement is CREATED`)
         user.addRequirementCommand(requirement)
-
+        console.log(`>>> user requirement inserted into the user: ` , user.getId() , requirement.getId());
         console.log(`>>> user object were trying mutating`)
 
         return user
     }
 
     checkUserAuth(id: string): TAuthServiceCheckTokenResponse {
-        for (const user of this.usersPool) {
-            // user.ge
-        }
+        
+        // this
+
 
         const response = this.authService.checkToken(id)
 
@@ -201,6 +267,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                 const cashFlowDirectionCode =
                     requirement.getTransactionTypeCode()
                 const value = requirement.getValue()
+                const id = requirement.getId();
 
                 return {
                     dateToExecute,
@@ -209,7 +276,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                     id,
                     title,
                     value,
-                    userId: id,
+                    userId: users[0].getId(),
                     isExecuted,
                 }
             })
@@ -345,25 +412,38 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         }
     }
 
-    update() {}
+    update() { }
+    
+    private usersPool: IPerson[]
+    private static instance: ApplicationSingletoneFacade | null = null
+    private dataBaseConnector: IDataBaseConnector
+    private authService: IAuthService
+    private personFactory: IPersonFactory
 
     private constructor(
         dataBaseConnector: IDataBaseConnector,
         personFactory: IPersonFactory,
         authService: IAuthService
     ) {
+
+        const log = new SimpleLogger('app constructor' , false).createLogger();
+
+        log(`>>> aplication constructor started` , true);
+
         this.authService = authService
         this.dataBaseConnector = dataBaseConnector
         this.personFactory = personFactory
         this.usersPool = []
-        console.log(
+        log(
             'connecting to data base started at ' +
                 new Date().toLocaleTimeString()
         )
 
+        log(`>>> loading user pool...`);
         this.dataBaseConnector.getAllPersons().then((usersData) => {
             const requirementFactory = new RequiremenCommandFactory()
 
+            log(`>>> users pool loaded`);
             Promise.all(
                 usersData.map((user) => {
                     return new Promise<{ description: string; subj: IPerson }>(
@@ -377,6 +457,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
                             Promise.all([
                                 new Promise((resolve) => {
+                                    log(`>>> getting user "${user.userName}" wallet...`);
                                     dataBaseConnector
                                         .getPersonWalletByUserId(userId)
                                         .then((wallets) => {
@@ -390,11 +471,12 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
                                                 newUser.incrementWallet(balance)
                                             }
-
+                                            log(`>>> ${user.userName} user wallet is updated`);
                                             resolve('foo')
                                         })
                                 }),
                                 new Promise((resolve) => {
+                                    log(`>>> getting ${user.userName} requirements...`);
                                     dataBaseConnector
                                         .getRequiremntsByUserId(userId)
                                         .then((response) => {
@@ -414,11 +496,12 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                                                     }
                                                 }
                                             )
-
+                                            log(`${user.userName} requirement is updated`);
                                             resolve('bar')
                                         })
                                 }),
                             ]).then((resolves) => {
+                                log(`>>> user data downloading is complete`);
                                 globalResolve({
                                     description: 'global resolver',
                                     subj: newUser,
@@ -428,12 +511,15 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                     )
                 })
             ).then((resolves) => {
+
                 resolves.forEach((elem) => {
                     this.usersPool.push(elem.subj)
                 })
+
+                log(`>>> users pool is updated`.toUpperCase() , true);
             })
 
-            console.log('>>> APPLICATION CONSTRUCTED')
+            log('>>> app constructor is finished'.toUpperCase() , true)
         })
     }
 }
