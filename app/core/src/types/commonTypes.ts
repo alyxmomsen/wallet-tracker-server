@@ -7,4 +7,5 @@ export interface IRequirementStatsType {
     title: string
     value: number
     isExecuted: boolean
+    deleted: boolean
 }

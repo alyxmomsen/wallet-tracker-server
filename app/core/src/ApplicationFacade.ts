@@ -12,7 +12,7 @@ import {
 } from './person/Person'
 
 import { ITask } from './Task'
-import { IRequirementFields, TUserData } from '../../web-server/express'
+import { TUserData } from '../../web-server/express'
 
 import {
     IRequirementCommand,
@@ -28,15 +28,12 @@ import { IRequirementStatsType } from './types/commonTypes'
 import { SimpleLogger } from '../../utils/SimpleLogger'
 
 export interface IApplicationFacade {
-    addUserRequirement({
-        cashFlowDirectionCode,
-        dateToExecute,
-        description,
-        isExecuted,
-        title,
-        userId,
-        value,
-    }: IRequirementFields): Promise<any>
+    addUserRequirement(
+        requirementFields: Omit<
+            IRequirementStatsType,
+            'id' | 'isExecuted' | 'deleted'
+        >
+    ): Promise<any>
     deleteUserRequirement(requirementId: string, token: string): Promise<any>
     addUserIntoThePool(
         username: string,
@@ -108,9 +105,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         log('checking requirements...')
         const requirementsToDelete = user
             .getAllReauirementCommands()
-            .filter((elem) => {
-                return requirementId === elem.getId()
-            })
+            .filter((elem) => {})
 
         if (requirementsToDelete.length > 1) {
             log('MULTIPLE requirements by this ID')
@@ -155,7 +150,10 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     }
 
     async addUserRequirement(
-        requirementFields: Omit<IRequirementFields, 'isExecuted'>
+        requirementFields: Omit<
+            IRequirementStatsType,
+            'isExecuted' | 'id' | 'deleted'
+        >
     ): Promise<IPerson | null> {
         console.log(`>>> check if user pool contain user by this ID`)
 
@@ -270,6 +268,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                     value,
                     userId: users[0].getId(),
                     isExecuted,
+                    deleted: false,
                 }
             })
 

@@ -19,6 +19,7 @@ import {
 } from 'firebase/firestore'
 import { TDBUserData, TUserData } from '../web-server/express'
 import { IRequirementStatsType } from '../core/src/types/commonTypes'
+import { SimpleLogger } from '../utils/SimpleLogger'
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -52,7 +53,7 @@ export type TDatabaseResultStatus = {
 
 export interface IDataBaseConnector {
     addUserRequirement(
-        data: Omit<IRequirementStatsType, 'isExecuted' | 'id'>,
+        data: Omit<IRequirementStatsType, 'isExecuted' | 'id' | 'deleted'>,
         userId: string
     ): Promise<IRequirementStatsType | null>
     getPersonByFields(
@@ -102,13 +103,13 @@ export type TWalletDBData = {
 
 export class FirebaseConnector implements IDataBaseConnector {
     async addUserRequirement(
-        fields: Omit<IRequirementStatsType, 'isExecuted' | 'id'>,
+        fields: Omit<IRequirementStatsType, 'isExecuted' | 'id' | 'deleted'>,
         userId: string
     ): Promise<IRequirementStatsType | null> {
         console.log('>>> try to add insert the requrement into DB')
 
         const newRequirementFields = await addUserRequirementIntoFireStore(
-            { ...fields },
+            { ...fields, deleted: false },
             userId
         )
 
@@ -320,6 +321,18 @@ async function addUserRequirementIntoFireStore(
     fields: Omit<IRequirementStatsType, 'id' | 'isExecuted'>,
     userId: string
 ): Promise<IRequirementStatsType | null> {
+    const log = new SimpleLogger(
+        'add user into firestore function'
+    ).createLogger()
+
+    log('function start')
+
+    log('arguments')
+
+    for (const prop in fields) {
+        log(prop)
+    }
+
     const docRef = await addDoc(collection(db, 'requirements'), {
         ...fields,
     })

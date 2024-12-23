@@ -431,12 +431,12 @@ webApp.post('/get-user-protected', async (req: Request, res: Response) => {
     const requirements = await myApplication.getPersonRequirementsAsync(xAuth)
 
     requirements.forEach((elem) => {
-        console.log(
-            `>>> ROUTE get-user-protected :: requirement: userID:` +
-                elem.userId +
-                ' | requirement id: ' +
-                elem.id
-        )
+        // console.log(
+        //     `>>> ROUTE get-user-protected :: requirement: userID:` +
+        //         elem.userId +
+        //         ' | requirement id: ' +
+        //         elem.id
+        // )
     })
 
     const responseData: TResponseJSONData<
@@ -518,17 +518,6 @@ webApp.post(
     }
 )
 
-export interface IRequirementFields {
-    id: string
-    cashFlowDirectionCode: number
-    dateToExecute: number
-    description: string
-    isExecuted: boolean
-    title: string
-    userId: string
-    value: number
-}
-
 webApp.post(
     '/add-user-requirements-protected',
     async (req: Request, res: Response) => {
@@ -579,7 +568,7 @@ webApp.post(
                 } as TResponseJSONData<null>
             }
 
-            const requirementsAsStats: IRequirementFields[] = updatedPerson
+            const requirementsAsStats: IRequirementStatsType[] = updatedPerson
                 .getAllReauirementCommands()
                 .map((requirement) => {
                     return {
@@ -592,6 +581,7 @@ webApp.post(
                         userId: updatedPerson.getId(),
                         value: requirement.getValue(),
                         id: requirement.getId(),
+                        deleted: requirement.getDeleted(),
                     }
                 })
 
@@ -606,7 +596,7 @@ webApp.post(
                     details: 'updated user data',
                 },
             } as TResponseJSONData<
-                IUserStats & { requirements: IRequirementFields[] }
+                IUserStats & { requirements: IRequirementStatsType[] }
             >)
         } catch (error) {
             console.log({ error })

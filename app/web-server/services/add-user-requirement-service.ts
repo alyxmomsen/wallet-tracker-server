@@ -16,10 +16,17 @@ export interface IAddUserRequirementService {
 export class AddUserRequirementService implements IAddUserRequirementService {
     async execute(
         app: ApplicationSingletoneFacade,
-        body: any,
+        body: Omit<IRequirementStatsType, 'id' | 'userId' | 'deleted'>,
         userId: string
     ): Promise<
-        TResponseJSONData<TUserData & { requirements: IRequirementStatsType[] }>
+        TResponseJSONData<
+            TUserData & {
+                requirements: Omit<
+                    IRequirementStatsType,
+                    'id' | 'executed' | 'deleted'
+                >[]
+            }
+        >
     > {
         try {
             const updatedUser = await app.addUserRequirement({
@@ -56,6 +63,7 @@ export class AddUserRequirementService implements IAddUserRequirementService {
                                 cashFlowDirectionCode:
                                     requirement.getTransactionTypeCode(),
                                 id: requirement.getId(),
+                                deleted: requirement.getDeleted(),
                             }
                         }),
                 },
