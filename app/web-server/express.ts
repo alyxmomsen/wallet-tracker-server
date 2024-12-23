@@ -1,7 +1,5 @@
 import { Request, Response } from 'express'
-import { authService, myApplication } from '..'
-import { TWalletData } from '../db/app'
-import { TRequirementStats } from '../core/src/requirement-command/RequirementCommand'
+import { myApplication } from '..'
 import { AddRequirementsBodyValidator } from './services/body-check-service'
 import {
     AddUserRequirementService,
@@ -156,157 +154,9 @@ webApp.post('/check-user-auth-protected-ep', (req: Request, res: Response) => {
     } as TResponseJSONData<TCheckUserAuthResponseData>)
 })
 
-// webApp.post('/get-user-wallet-protected', (req: Request, res: Response) => {
-//     const xauth = req.headers['x-auth']
-
-//     if (typeof xauth === 'object') {
-//         res.status(500).json({
-//             payload: null,
-//             status: {
-//                 code: 0,
-//                 details: 'check internal error',
-//             },
-//         } as TResponseJSONData<null>)
-//     }
-
-//     if (typeof xauth === 'string') {
-//         myApplication
-//             .getWalletsByUserIdIdAsync(xauth)
-//             .then((data) => {
-//                 return res.status(200).json({
-//                     payload: data,
-//                     status: {
-//                         code: 0,
-//                         details: 'check',
-//                     },
-//                 } as TResponseJSONData<TWalletData[]>)
-//             })
-//             .catch((e) => {
-//                 console.error({
-//                     errorDetais: e,
-//                     description: 'somthing wrong',
-//                 })
-//                 return res.status(500).json({
-//                     payload: null,
-//                     status: {
-//                         code: 0,
-//                         details: 'check internal error',
-//                     },
-//                 } as TResponseJSONData<null>)
-//             })
-//             .finally()
-//     } else {
-//         res.status(500).json({
-//             payload: null,
-//             status: {
-//                 code: 0,
-//                 details: 'check internal error',
-//             },
-//         } as TResponseJSONData<null>)
-//     }
-// })
-
 // Простой маршрут по умолчанию
 webApp.get('/', async (req: Request, res: Response) => {
     res.send('Привет, мир!')
-})
-
-webApp.post('/auth', async (req: Request, res: Response) => {
-    const { body }: { body: TRequestBodyType | undefined } = req
-
-    if (!body) {
-        return res.status(400).json({
-            status: {
-                code: 1,
-                details: 'no body object',
-            },
-            payload: null,
-        } as {
-            payload: {
-                userId: string
-            } | null
-            status: {
-                code: number
-                details: string
-            }
-        })
-    }
-
-    const { userName: username, password } = body
-
-    if (username === undefined || password === undefined) {
-        return res.status(400).json({
-            payload: null,
-            status: {
-                code: 2,
-                details: 'no username or no password',
-            },
-        } as {
-            payload: {
-                userId: string
-            } | null
-            status: {
-                code: number
-                details: string
-            }
-        })
-    }
-
-    /* ============= */
-
-    const { userData } = await authService.authUser(username, password)
-
-    if (!userData) {
-        return res.status(400).json({
-            payload: null,
-            status: {
-                code: 3,
-                details: 'user is not exists',
-            },
-        } as {
-            payload: {
-                userId: string
-            } | null
-            status: {
-                code: number
-                details: string
-            }
-        })
-    }
-
-    const data = await myApplication.getPersonDataByIdAsync(userData.id)
-
-    if (!data) {
-        return res.status(400).json({
-            payload: null,
-            status: {
-                code: 4,
-                details: 'user is not exists',
-            },
-        } as {
-            payload: {
-                userId: string
-            } | null
-            status: {
-                code: number
-                details: string
-            }
-        })
-    }
-
-    // const { username: name } = data as TDataBaseUser
-
-    const responseData: TResponseJSONData<TAuthUserData> = {
-        payload: {
-            userId: userData.id,
-        },
-        status: {
-            code: 0,
-            details: 'user authorized successfuly',
-        },
-    }
-
-    res.status(200).json(responseData)
 })
 
 webApp.post('/get-user-with-token', async (req: Request, res: Response) => {
@@ -456,137 +306,6 @@ webApp.post('/registration', async (req: Request, res: Response) => {
     } as TResponseJSONData<TAuthUserData>)
 })
 
-webApp.post('/get-user-protected', async (req: Request, res: Response) => {
-    const xAuth = req.headers['x-auth']
-
-    if (typeof xAuth !== 'string') {
-        const responseData: TResponseJSONData<TUserData> = {
-            status: {
-                code: 1,
-                details: 'no token',
-            },
-            payload: null,
-        }
-
-        return res.status(300).json(responseData)
-    }
-
-    const userDataResponse = await myApplication.getPersonDataByIdAsync(xAuth)
-
-    //
-
-    const responseStatusCode = userDataResponse.details.code
-
-    if (responseStatusCode !== 0) {
-        const responseData: TResponseJSONData<TUserData> = {
-            status: {
-                code: responseStatusCode,
-                details: 'internal error , too much user with this id ',
-            },
-            payload: null,
-        }
-
-        return res.status(300).json(responseData)
-    }
-
-    const userData = userDataResponse.userData
-
-    if (userData === null) {
-        res.status(400).json({
-            payload: null,
-            status: {
-                code: 2342,
-                details: 'no data or ...',
-            },
-        } as TResponseJSONData<Omit<TUserData, 'id'>>)
-    }
-
-    const requirements = await myApplication.getPersonRequirementsAsync(xAuth)
-
-    requirements.forEach((elem) => {
-        // console.log(
-        //     `>>> ROUTE get-user-protected :: requirement: userID:` +
-        //         elem.userId +
-        //         ' | requirement id: ' +
-        //         elem.id
-        // )
-    })
-
-    const responseData: TResponseJSONData<
-        Omit<TUserData, 'id'> & { requirements: IRequirementStatsType[] }
-    > = {
-        status: {
-            code: 0,
-            details: 'user data',
-        },
-        payload: userData
-            ? {
-                  userName: userData.userName,
-                  wallet: userData.wallet,
-                  requirements,
-              }
-            : null,
-    }
-
-    res.status(200).json(responseData)
-})
-
-type TGetRequirementsRequestBody = {}
-
-// const v: TAuthRequestHeaders = {
-//     "x-auth":''
-// }
-
-webApp.post(
-    '/get-user-requirements-protected',
-    async (req: Request, res: Response) => {
-        const headers = req.headers
-
-        const userId = headers['x-auth'] as string | undefined
-
-        const { body } = req
-
-        // if (body === undefined) {
-        //     res.status(500).json({
-        //         foo: 'bar',
-        //         details: 'server error',
-        //     })
-        // }
-
-        if (userId === undefined) {
-            return res.status(500).json({
-                status: {
-                    code: 1,
-                    details: 'internal error',
-                },
-                payload: null,
-            } as TResponseJSONData<TRequirementStats[]>)
-        }
-
-        try {
-            const requirements =
-                await myApplication.getPersonRequirementsAsync(userId)
-
-            res.status(200).json({
-                status: {
-                    code: 0,
-                    details: 'requirements',
-                },
-                payload: requirements,
-            } as TResponseJSONData<IRequirementStatsType[]>)
-        } catch (e) {
-            console.log({ e })
-            res.status(500).json({
-                status: {
-                    code: 1,
-                    details: 'internal error',
-                },
-                payload: null,
-            } as TResponseJSONData<TRequirementStats[]>)
-        }
-    }
-)
-
 webApp.post(
     '/add-user-requirements-protected',
     async (req: Request, res: Response) => {
@@ -680,16 +399,6 @@ webApp.post(
     }
 )
 
-// function routeHandlerWrapper(request:Request , response:Response , handler:() => ):void {
-
-// }
-
-// Пример маршрута с параметрами
-// app.get('/hello/:name', (req, res) => {
-//     const name = req.params.name;
-//     res.send(`Привет, ${name}!`);
-// });
-
 // Запуск сервера
 webApp.listen(port, () => {
     console.log(`Сервер запущен на http://localhost:${port}`)
@@ -739,8 +448,4 @@ export type TResponseJSONData<P> = {
 type TRequestBodyType = {
     userName: string
     password: string
-}
-
-type TGetRequiremenstResponse = {
-    requirements: TRequirementStats[]
 }

@@ -1,10 +1,9 @@
 import {
-    FirebaseConnector,
     IDataBaseConnector,
     TDatabaseResultStatus,
     TWalletData,
 } from '../../db/app'
-import { IPersonFactory, UserPersonFactory } from './factories/PersonFactory'
+import { IPersonFactory } from './factories/PersonFactory'
 import {
     IPerson,
     IUserStats,
@@ -17,14 +16,12 @@ import { TUserData } from '../../web-server/express'
 
 import {
     IRequirementCommand,
-    TRequirementStats,
 } from './requirement-command/RequirementCommand'
 import { RequiremenCommandFactory } from './requirement-command/factories/Requirement-command-factory'
 import {
     IAuthService,
     TAuthServiceCheckTokenResponse,
 } from './auth-service/AuthService'
-import { myApplication } from '../..'
 import { IRequirementStatsType } from './types/commonTypes'
 import { SimpleLogger } from '../../utils/SimpleLogger'
 
