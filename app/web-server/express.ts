@@ -310,6 +310,8 @@ webApp.post('/auth', async (req: Request, res: Response) => {
 })
 
 webApp.post('/get-user-with-token', async (req: Request, res: Response) => {
+    // console.log('>>> test :: ' , req.body);
+
     const headers = req.headers
 
     const AUTHtOKEN = headers['x-auth']
@@ -349,6 +351,66 @@ webApp.post('/get-user-with-token', async (req: Request, res: Response) => {
         authToken: string
     }>)
 })
+
+webApp.post(
+    '/get-user-with-username-and-password',
+    async (req: Request, res: Response) => {
+        const requesBodyData = req.body as
+            | { userName: string; password: string }
+            | null
+            | undefined
+
+        if (typeof requesBodyData !== 'object') {
+            return res.status(500).json({
+                payload: null,
+                status: {
+                    code: 1,
+                    details: 'no body object or smth wrong',
+                },
+            } as TResponseJSONData<null>)
+        }
+
+        if (requesBodyData === null) {
+            return res.status(500).json({
+                payload: null,
+                status: {
+                    code: 2,
+                    details: 'no body object , body object is null',
+                },
+            } as TResponseJSONData<null>)
+        }
+
+        const responsedUserStatsData = await myApplication.loginUser(
+            requesBodyData.userName,
+            requesBodyData.password
+        )
+
+        if (responsedUserStatsData === null)
+            return res.status(500).json({
+                payload: null,
+                status: {
+                    code: 3,
+                    details: 'user no logined',
+                },
+            } as TResponseJSONData<null>)
+
+        return res.status(200).json({
+            payload: {
+                authToken: responsedUserStatsData.authToken,
+                userStats: responsedUserStatsData.userStats,
+            },
+            status: {
+                code: 0,
+                details: 'user data , you please',
+            },
+        } as TResponseJSONData<{
+            userStats: IUserStats & {
+                requirements: Omit<IRequirementStatsType, 'userId'>[]
+            }
+            authToken: string
+        }>)
+    }
+)
 
 webApp.post('/registration', async (req: Request, res: Response) => {
     const { body }: { body: TRequestBodyType | undefined } = req

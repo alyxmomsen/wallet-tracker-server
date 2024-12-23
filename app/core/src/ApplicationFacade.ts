@@ -45,6 +45,15 @@ export interface IApplicationFacade {
         username: string,
         password: string
     ): Promise<TDatabaseResultStatus>
+    loginUser(
+        userName: string,
+        password: string
+    ): Promise<{
+        userStats: IUserStats & {
+            requirements: Omit<IRequirementStatsType, 'userId'>[]
+        }
+        authToken: string
+    } | null>
     getPersonByID(id: string): IPerson | null
     getPersons(): IPerson[]
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>): void
@@ -69,6 +78,62 @@ export interface IApplicationFacade {
 }
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
+    async loginUser(
+        userName: string,
+        password: string
+    ): Promise<{
+        userStats: IUserStats & {
+            requirements: Omit<IRequirementStatsType, 'userId'>[]
+        }
+        authToken: string
+    } | null> {
+        const dataBaseResponse = await this.dataBaseConnector.getPersonByFields(
+            userName,
+            password
+        )
+
+        const data = dataBaseResponse.userData
+
+        if (data === null) {
+            return null
+        }
+
+        const userId = data.id
+
+        const matchedUsersById = this.usersPool.filter((elem) => {
+            return elem.getId() === userId
+        })
+
+        if (matchedUsersById.length > 1) return null
+
+        if (matchedUsersById.length === 0) return null
+
+        const matchedUser = matchedUsersById[0]
+
+        return {
+            authToken: userId,
+            userStats: {
+                name: matchedUser.getUserName(),
+                requirements: matchedUser
+                    .getAllReauirementCommands()
+                    .map((elem) => {
+                        return {
+                            cashFlowDirectionCode:
+                                elem.getTransactionTypeCode(),
+                            dateToExecute: elem.getExecutionDate(),
+                            deleted: elem.getDeleted(),
+                            description: elem.getDescription(),
+                            id: elem.getId(),
+                            isExecuted: elem.checkIfExecuted(),
+                            title: elem.getTitle(),
+                            value: elem.getValue(),
+                        } as Omit<IRequirementStatsType, 'userId'>
+                    }),
+                wallet: matchedUser.getWalletBalance(),
+            },
+        }
+    }
+
     async getUserWithAuthToken(token: string): Promise<{
         userStats: IUserStats & {
             requirements: Omit<IRequirementStatsType, 'userId'>[]
