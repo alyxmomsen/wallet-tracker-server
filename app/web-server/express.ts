@@ -156,55 +156,55 @@ webApp.post('/check-user-auth-protected-ep', (req: Request, res: Response) => {
     } as TResponseJSONData<TCheckUserAuthResponseData>)
 })
 
-webApp.post('/get-user-wallet-protected', (req: Request, res: Response) => {
-    const xauth = req.headers['x-auth']
+// webApp.post('/get-user-wallet-protected', (req: Request, res: Response) => {
+//     const xauth = req.headers['x-auth']
 
-    if (typeof xauth === 'object') {
-        res.status(500).json({
-            payload: null,
-            status: {
-                code: 0,
-                details: 'check internal error',
-            },
-        } as TResponseJSONData<null>)
-    }
+//     if (typeof xauth === 'object') {
+//         res.status(500).json({
+//             payload: null,
+//             status: {
+//                 code: 0,
+//                 details: 'check internal error',
+//             },
+//         } as TResponseJSONData<null>)
+//     }
 
-    if (typeof xauth === 'string') {
-        myApplication
-            .getWalletsByUserIdIdAsync(xauth)
-            .then((data) => {
-                return res.status(200).json({
-                    payload: data,
-                    status: {
-                        code: 0,
-                        details: 'check',
-                    },
-                } as TResponseJSONData<TWalletData[]>)
-            })
-            .catch((e) => {
-                console.error({
-                    errorDetais: e,
-                    description: 'somthing wrong',
-                })
-                return res.status(500).json({
-                    payload: null,
-                    status: {
-                        code: 0,
-                        details: 'check internal error',
-                    },
-                } as TResponseJSONData<null>)
-            })
-            .finally()
-    } else {
-        res.status(500).json({
-            payload: null,
-            status: {
-                code: 0,
-                details: 'check internal error',
-            },
-        } as TResponseJSONData<null>)
-    }
-})
+//     if (typeof xauth === 'string') {
+//         myApplication
+//             .getWalletsByUserIdIdAsync(xauth)
+//             .then((data) => {
+//                 return res.status(200).json({
+//                     payload: data,
+//                     status: {
+//                         code: 0,
+//                         details: 'check',
+//                     },
+//                 } as TResponseJSONData<TWalletData[]>)
+//             })
+//             .catch((e) => {
+//                 console.error({
+//                     errorDetais: e,
+//                     description: 'somthing wrong',
+//                 })
+//                 return res.status(500).json({
+//                     payload: null,
+//                     status: {
+//                         code: 0,
+//                         details: 'check internal error',
+//                     },
+//                 } as TResponseJSONData<null>)
+//             })
+//             .finally()
+//     } else {
+//         res.status(500).json({
+//             payload: null,
+//             status: {
+//                 code: 0,
+//                 details: 'check internal error',
+//             },
+//         } as TResponseJSONData<null>)
+//     }
+// })
 
 // Простой маршрут по умолчанию
 webApp.get('/', async (req: Request, res: Response) => {
