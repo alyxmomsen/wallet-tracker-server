@@ -24,36 +24,6 @@ webApp.use(cors())
 webApp.use(bodyParser())
 webApp.use(express.json())
 
-type TAuthUserData = {
-    userId: string
-}
-
-export type TUserData = {
-    userName: string
-    wallet: number
-    id: string
-    // requirements: TRequirementStats[]
-}
-
-export type TDBUserData = {
-    username: string
-}
-
-// p - payload
-export type TResponseJSONData<P> = {
-    status: {
-        code: number
-        details: string
-    }
-    payload: P | null
-}
-
-//
-type TRequestBodyType = {
-    userName: string
-    password: string
-}
-
 // dev: user id ; prod: jwt
 type TAuthRequestHeaders = {
     'x-auth': string
@@ -339,6 +309,47 @@ webApp.post('/auth', async (req: Request, res: Response) => {
     res.status(200).json(responseData)
 })
 
+webApp.post('/get-user-with-token', async (req: Request, res: Response) => {
+    const headers = req.headers
+
+    const AUTHtOKEN = headers['x-auth']
+
+    if (typeof AUTHtOKEN !== 'string') {
+        return res.status(500).json({
+            payload: null,
+            status: {
+                code: 1,
+                details: 'details bla bla',
+            },
+        } as TResponseJSONData<null>)
+    }
+
+    const userDataResponse = await myApplication.getUserWithAuthToken(AUTHtOKEN)
+
+    if (userDataResponse === null) {
+        return res.status(500).json({
+            payload: null,
+            status: {
+                code: 1,
+                details: 'details bla bla',
+            },
+        } as TResponseJSONData<null>)
+    }
+
+    return res.status(200).json({
+        payload: userDataResponse,
+        status: {
+            code: 0,
+            details: 'user data and auth token',
+        },
+    } as TResponseJSONData<{
+        userStats: IUserStats & {
+            requirements: Omit<IRequirementStatsType, 'userId'>[]
+        }
+        authToken: string
+    }>)
+})
+
 webApp.post('/registration', async (req: Request, res: Response) => {
     const { body }: { body: TRequestBodyType | undefined } = req
 
@@ -463,10 +474,6 @@ type TGetRequirementsRequestBody = {}
 // const v: TAuthRequestHeaders = {
 //     "x-auth":''
 // }
-
-type TGetRequiremenstResponse = {
-    requirements: TRequirementStats[]
-}
 
 webApp.post(
     '/get-user-requirements-protected',
@@ -621,42 +628,12 @@ webApp.post(
 //     res.send(`Привет, ${name}!`);
 // });
 
-// Пример маршрута для обработки POST-запроса
-// app.post('/data', (req, res) => {
-//     const data = req.body;
-//     res.json({
-//         message: 'Данные получены!',
-//         receivedData: data
-//     });
-// });
-
 // Запуск сервера
 webApp.listen(port, () => {
     console.log(`Сервер запущен на http://localhost:${port}`)
 })
 
 export default webApp
-
-function bodyValidator(req: Request) {
-    // const { body }: { body: IBody | undefined } = req
-
-    // if (!body) {
-    //     return res.status(400).json({
-    //         details: 'no body',
-    //     })
-    // }
-
-    // const { username, password } = body
-
-    // if (username === undefined || password === undefined) {
-
-    //     return res.status(400).json({
-    //         details: 'no username or no password',
-    //     })
-    // }
-
-    return false
-}
 
 function responseDataFactory<T>(
     responseData: T,
@@ -670,4 +647,38 @@ function responseDataFactory<T>(
             details,
         },
     }
+}
+
+type TAuthUserData = {
+    userId: string
+}
+
+export type TUserData = {
+    userName: string
+    wallet: number
+    id: string
+    // requirements: TRequirementStats[]
+}
+
+export type TDBUserData = {
+    username: string
+}
+
+// p - payload
+export type TResponseJSONData<P> = {
+    status: {
+        code: number
+        details: string
+    }
+    payload: P | null
+}
+
+//
+type TRequestBodyType = {
+    userName: string
+    password: string
+}
+
+type TGetRequiremenstResponse = {
+    requirements: TRequirementStats[]
 }

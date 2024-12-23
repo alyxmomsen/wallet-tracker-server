@@ -7,6 +7,7 @@ import {
 import { IPersonFactory, UserPersonFactory } from './factories/PersonFactory'
 import {
     IPerson,
+    IUserStats,
     OrdinaryPerson,
     OrdinaryPerson as User,
 } from './person/Person'
@@ -59,9 +60,64 @@ export interface IApplicationFacade {
     getPersonRequirementsAsync(id: string): IRequirementStatsType[]
     getWalletsByUserIdIdAsync(id: string): Promise<TWalletData[]>
     checkUserAuth(id: string): TAuthServiceCheckTokenResponse
+    getUserWithAuthToken(token: string): Promise<{
+        userStats: IUserStats & {
+            requirements: Omit<IRequirementStatsType, 'userId'>[]
+        }
+        authToken: string
+    } | null>
 }
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
+    async getUserWithAuthToken(token: string): Promise<{
+        userStats: IUserStats & {
+            requirements: Omit<IRequirementStatsType, 'userId'>[]
+        }
+        authToken: string
+    } | null> {
+        // the authenticity of the token
+
+        // if token FAIL
+        if (false) {
+            return null
+        }
+
+        // exptract userId from the token
+
+        const userId = token
+
+        const user = await this.getUserById(userId)
+
+        if (user === null) {
+            return null
+        }
+
+        const requirements: Omit<IRequirementStatsType, 'userId'>[] = (
+            await this.getPersonRequirementsAsync(userId)
+        ).map((elem) => {
+            return {
+                cashFlowDirectionCode: elem.cashFlowDirectionCode,
+                dateToExecute: elem.dateToExecute,
+                deleted: elem.deleted,
+                description: elem.description,
+                id: elem.id,
+                isExecuted: elem.isExecuted,
+                title: elem.title,
+                value: elem.value,
+            }
+        })
+
+        const userData: IUserStats & {
+            requirements: Omit<IRequirementStatsType, 'userId'>[]
+        } = {
+            name: user.getUserName(),
+            wallet: user.getWalletBalance(),
+            requirements,
+        }
+
+        return { userStats: userData, authToken: token }
+    }
+
     async deleteUserRequirement(
         requirementId: string,
         token: string
