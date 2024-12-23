@@ -160,8 +160,6 @@ webApp.get('/', async (req: Request, res: Response) => {
 })
 
 webApp.post('/get-user-with-token', async (req: Request, res: Response) => {
-    // console.log('>>> test :: ' , req.body);
-
     const headers = req.headers
 
     const AUTHtOKEN = headers['x-auth']
@@ -428,7 +426,6 @@ export type TUserData = {
     userName: string
     wallet: number
     id: string
-    // requirements: TRequirementStats[]
 }
 
 export type TDBUserData = {

@@ -1,8 +1,6 @@
 import { ApplicationSingletoneFacade } from './core/src/ApplicationFacade'
 import { AuthService, IAuthService } from './core/src/auth-service/AuthService'
-import {
-    UserPersonFactory,
-} from './core/src/factories/PersonFactory'
+import { UserPersonFactory } from './core/src/factories/PersonFactory'
 import { FirebaseConnector } from './db/app'
 
 const firebaseConnector = new FirebaseConnector()

@@ -8,7 +8,6 @@ export interface IPersonFactory {
         objectsPull: IPerson[],
         dBConnector: IDataBaseConnector
     ): Promise<IPerson | null>
-    // create(username:string , password);
 }
 
 export abstract class PersonFactory implements IPersonFactory {

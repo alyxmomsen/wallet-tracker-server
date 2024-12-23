@@ -1,12 +1,4 @@
 export class SimpleLogger {
-    // switchOn() {
-    //     this.state = true;
-    // }
-
-    // switchOff() {
-    //     this.state = false;
-    // }
-
     createLogger() {
         return (value: string, force: boolean | undefined = undefined) => {
             if (force === false) {

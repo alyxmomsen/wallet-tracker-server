@@ -8,13 +8,6 @@ export class UniqIdManager {
         return 0
     }
 
-    // lastId(): number {
-
-    //     )
-
-    //     return this.registr
-    // }
-
     constructor() {
         this.registry = new IdRegistry()
     }

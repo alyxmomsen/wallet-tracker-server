@@ -36,7 +36,6 @@ export interface IPerson {
     getStatusDescription(): string
     setStatus(status: IPersonStatusSystem): boolean
     getId(): string
-    // getData():IUserStats
 }
 
 export abstract class Person implements IPerson {
@@ -44,22 +43,10 @@ export abstract class Person implements IPerson {
     protected name: string
     protected wallet: IWallet
     protected requirementCommands: IRequirementCommand[]
-    // protected hungerLevel: number;
-    // protected tiredLevel: number;
-    // protected sleepLevel: number;
+
     protected averageSpending: number
     protected status: IPersonStatusSystem
     protected updateStatus: number
-
-    // getData(): IUserStats {
-
-    //     const v: IUserStats = {
-    //         name: '',
-    //         wallet: 0
-    //     }
-
-    //     return
-    // }
 
     getId(): string {
         return this.id

@@ -286,8 +286,6 @@ async function getUserRequirementsByUserId(
 async function getPersonsByIdFireBase(
     id: string
 ): Promise<Omit<TUserData, 'wallet'> | null> {
-    // 'jW7vjyole5yNxtis70BH'
-
     const docRef = doc(db, 'persons', id)
 
     const docSnap = await getDoc(docRef)

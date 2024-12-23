@@ -14,9 +14,7 @@ import {
 import { ITask } from './Task'
 import { TUserData } from '../../web-server/express'
 
-import {
-    IRequirementCommand,
-} from './requirement-command/RequirementCommand'
+import { IRequirementCommand } from './requirement-command/RequirementCommand'
 import { RequiremenCommandFactory } from './requirement-command/factories/Requirement-command-factory'
 import {
     IAuthService,
@@ -342,10 +340,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         return wallet
     }
-
-    // getPersonRequirementsAsync(id: string): Promise<TRequirementStats[]> {
-    //     return new Promise(() => {});
-    // }
 
     getPersonRequirementsAsync(id: string): IRequirementStatsType[] {
         const users: IPerson[] = []

@@ -2,7 +2,6 @@ import { IPerson } from './person/Person'
 import { IRequirementCommand } from './requirement-command/RequirementCommand'
 
 export interface ITask<T, S> {
-    // apply(subject: S): void
     getRequirement(): IRequirementCommand
     getDateStart(): Date
 }
@@ -10,9 +9,7 @@ export interface ITask<T, S> {
 export class RequirementTask implements ITask<IRequirementCommand, IPerson> {
     dateStart: Date
     requirement: IRequirementCommand
-    // apply(subject: IPerson) {
-    //     subject.addRequirement(this.requirement)
-    // }
+
     getRequirement(): IRequirementCommand {
         return this.requirement
     }
