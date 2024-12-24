@@ -15,7 +15,10 @@ import { ITask } from './Task'
 import { TUserData } from '../../web-server/express'
 
 import { IRequirementCommand } from './requirement-command/RequirementCommand'
-import { RequiremenCommandFactory } from './requirement-command/factories/Requirement-command-factory'
+import {
+    IRequirementCommandFactory,
+    RequiremenCommandFactory,
+} from './requirement-command/factories/Requirement-command-factory'
 import {
     IAuthService,
     TAuthServiceCheckTokenResponse,
@@ -70,9 +73,48 @@ export interface IApplicationFacade {
         }
         authToken: string
     } | null>
+    replicationUser(
+        newUserData: IUserStats & { id: string } & {
+            requirements: Omit<IRequirementStatsType, 'userId'>[]
+        }
+    ): Promise<any>
 }
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
+    async replicationUser(
+        newUserData: IUserStats & { id: string } & {
+            requirements: Omit<IRequirementStatsType, 'userId'>[]
+        }
+    ): Promise<any> {
+        const fetchedUsers: IPerson[] = []
+
+        for (const user of this.usersPool) {
+            if (user.getId() === newUserData.id) {
+                fetchedUsers.push(user)
+            }
+        }
+
+        console.log(
+            '>>> update user :: fetched users lenghts: ' + fetchedUsers.length
+        )
+
+        if (fetchedUsers.length > 1) {
+            return
+        }
+
+        if (fetchedUsers.length < 0) return
+
+        if (fetchedUsers.length === 0) return
+
+        const fetchedUser = fetchedUsers[0]
+
+        fetchedUser.replicateWalletBalance(newUserData.wallet)
+        fetchedUser.replicateRequirements(
+            newUserData.requirements,
+            new RequiremenCommandFactory()
+        )
+    }
+
     async loginUser(
         userName: string,
         password: string
@@ -543,7 +585,8 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         log(`>>> loading user pool...`)
         this.dataBaseConnector.getAllPersons().then((usersData) => {
-            const requirementFactory = new RequiremenCommandFactory()
+            const requirementFactory: IRequirementCommandFactory =
+                new RequiremenCommandFactory()
 
             log(`>>> users pool loaded`)
             Promise.all(

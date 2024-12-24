@@ -31,6 +31,40 @@ type TCheckUserAuthResponseData = {
     token: string
 }
 
+webApp.post('/update-user', async (req: Request, res: Response) => {
+    const token = req.headers['x-auth']
+    const body = req.body as IUserStats & {
+        requirements: Omit<IRequirementStatsType, 'userId'>[]
+    }
+
+    console.log('>>> update user :: token: ', { token })
+    console.log('>>> update user :: body: ', { body })
+
+    // validate req data and headers
+
+    if (typeof token !== 'string') {
+        return res.status(500).json({
+            payload: { foo: 'bar' },
+            status: {
+                code: 1,
+                details: 'wrong token data type',
+            },
+        } as TResponseJSONData<{ foo: 'bar' }>)
+    }
+
+    // --------------------------
+
+    myApplication.replicationUser({ ...body, id: token })
+
+    return res.status(200).json({
+        payload: { foo: 'bar' },
+        status: {
+            code: 0,
+            details: 'respose',
+        },
+    } as TResponseJSONData<{ foo: 'bar' }>)
+})
+
 webApp.post(
     '/delete-requirement-protected-ep',
     async (req: Request, res: Response) => {

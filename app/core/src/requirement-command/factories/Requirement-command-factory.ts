@@ -6,11 +6,15 @@ import {
 } from '../RequirementCommand'
 
 export interface IRequirementCommandFactory {
-    create(transactionDirection: number): IRequirementCommand | null
+    create(
+        fields: Omit<IRequirementStatsType, 'userId'>
+    ): IRequirementCommand | null
 }
 
-export class RequiremenCommandFactory {
-    create(fields: IRequirementStatsType): IRequirementCommand | null {
+export class RequiremenCommandFactory implements IRequirementCommandFactory {
+    create(
+        fields: Omit<IRequirementStatsType, 'userId'>
+    ): IRequirementCommand | null {
         switch (fields.cashFlowDirectionCode) {
             case 0:
                 return new IncrementMoneyRequirementCommand(
