@@ -1,13 +1,19 @@
 export class SimpleLogger {
     createLogger() {
-        return (value: string, force: boolean | undefined = undefined) => {
+        return (
+            logTitle: string,
+            payload: (string | object) | null = null,
+            force: boolean | undefined = undefined
+        ) => {
             if (force === false) {
                 // console.log('>>>>>>>> log forced as FALSE');
                 return
             }
 
             if (this.state || force)
-                console.log(`>>> ${this.title} :: ${value}`)
+                console.log(`>>> ${this.title} :: ${logTitle}`)
+            if (payload)
+                console.log(`>>> ${this.title} :: ${logTitle} :: `, { payload })
         }
     }
 

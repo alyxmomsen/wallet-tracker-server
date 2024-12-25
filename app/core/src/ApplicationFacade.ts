@@ -25,6 +25,10 @@ import {
 } from './auth-service/AuthService'
 import { IRequirementStatsType } from './types/commonTypes'
 import { SimpleLogger } from '../../utils/SimpleLogger'
+import jwt from 'jsonwebtoken'
+import { IJWTokenService, JWTokenService } from './services/jwt-token-service'
+
+// const jwt = require('jsonwebtoken');
 
 export interface IApplicationFacade {
     addUserRequirement(
@@ -124,31 +128,48 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         }
         authToken: string
     } | null> {
-        const dataBaseResponse = await this.dataBaseConnector.getPersonByFields(
-            userName,
-            password
-        )
+        const log = new SimpleLogger('login user').createLogger()
 
-        const data = dataBaseResponse.userData
+        const dataBaseResponse: TDatabaseResultStatus =
+            await this.dataBaseConnector.getPersonByFields(userName, password)
 
-        if (data === null) {
+        /* -------------------------- */
+
+        const userData = dataBaseResponse.userData
+
+        if (userData === null) {
             return null
         }
 
-        const userId = data.id
+        const userId = userData.id
+
+        /* --------------------------- */
+
+        log('matching users...')
 
         const matchedUsersById = this.usersPool.filter((elem) => {
             return elem.getId() === userId
         })
 
+        log('matched user: ')
+        console.log('>>> login user :: ::', matchedUsersById[0])
+
+        /* -------------------------------- */
+
         if (matchedUsersById.length > 1) return null
+
+        /* -------------------------------- */
 
         if (matchedUsersById.length === 0) return null
 
+        /* -------------------------------- */
+
         const matchedUser = matchedUsersById[0]
 
+        const authToken = this.jsonWebTokenService.sign(matchedUser.getId())
+
         return {
-            authToken: userId,
+            authToken: authToken,
             userStats: {
                 name: matchedUser.getUserName(),
                 requirements: matchedUser
@@ -177,16 +198,25 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         }
         authToken: string
     } | null> {
+        const log = new SimpleLogger('Get user with authToken').createLogger()
+
         // the authenticity of the token
+        log('start')
+
+        const response = this.jsonWebTokenService.verify(token)
+
+        log('response', { response })
+
+        // console.log();
 
         // if token FAIL
-        if (false) {
+        if (response === null) {
             return null
         }
 
         // exptract userId from the token
 
-        const userId = token
+        const userId = response.value
 
         const user = await this.getUserById(userId)
 
@@ -564,6 +594,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     private dataBaseConnector: IDataBaseConnector
     private authService: IAuthService
     private personFactory: IPersonFactory
+    private jsonWebTokenService: IJWTokenService
 
     private constructor(
         dataBaseConnector: IDataBaseConnector,
@@ -572,7 +603,9 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     ) {
         const log = new SimpleLogger('app constructor', false).createLogger()
 
-        log(`>>> aplication constructor started`, true)
+        log(`aplication constructor started`, null, true)
+
+        this.jsonWebTokenService = new JWTokenService()
 
         this.authService = authService
         this.dataBaseConnector = dataBaseConnector
@@ -668,10 +701,10 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                     this.usersPool.push(elem.subj)
                 })
 
-                log(`>>> users pool is updated`.toUpperCase(), true)
+                log(`users pool is updated`.toUpperCase(), null, true)
             })
 
-            log('>>> app constructor is finished'.toUpperCase(), true)
+            log('app constructor is finished'.toUpperCase(), null, true)
         })
     }
 }
