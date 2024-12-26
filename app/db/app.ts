@@ -376,6 +376,7 @@ async function addUserRequirementIntoFireStore(
 
     const docRef = await addDoc(collection(db, 'requirements'), {
         ...fields,
+        userId,
     })
 
     const docSnap = await getDoc(docRef)

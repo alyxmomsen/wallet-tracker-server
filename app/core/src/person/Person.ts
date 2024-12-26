@@ -43,7 +43,6 @@ export interface IPerson {
     setStatus(status: IPersonStatusSystem): boolean
     getId(): string
     getCreatedTimeStamp(): number
-
     getUpdatedTimeStamp(): number
 }
 

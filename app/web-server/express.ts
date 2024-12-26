@@ -71,7 +71,6 @@ webApp.post(
         log('Route /delete-requirement-protected-ep')
 
         // const response = () => responseDataFactory<null>(null , 12))
-
         /* xAuth check */
 
         const xAuth = req.headers['x-auth']
@@ -397,6 +396,8 @@ webApp.post(
                         value: requirement.getValue(),
                         id: requirement.getId(),
                         deleted: requirement.getDeleted(),
+                        updatedTimeStamp: requirement.getUpdatedTimeStamp(),
+                        createdTimeStamp: requirement.getCreatedTimeStamp(),
                     }
                 })
 

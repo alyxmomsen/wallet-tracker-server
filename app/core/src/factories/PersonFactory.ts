@@ -5,7 +5,6 @@ export interface IPersonFactory {
     createAsync(
         username: string,
         password: string,
-        objectsPull: IPerson[],
         dBConnector: IDataBaseConnector
     ): Promise<IPerson | null>
 }
@@ -14,7 +13,6 @@ export abstract class PersonFactory implements IPersonFactory {
     async createAsync(
         username: string,
         password: string,
-        objectsPull: IPerson[],
         dBConnector: IDataBaseConnector
     ): Promise<IPerson | null> {
         // middleware

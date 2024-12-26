@@ -66,6 +66,10 @@ export class AddUserRequirementService implements IAddUserRequirementService {
                                     requirement.getTransactionTypeCode(),
                                 id: requirement.getId(),
                                 deleted: requirement.getDeleted(),
+                                createdTimeStamp:
+                                    requirement.getCreatedTimeStamp(),
+                                updatedTimeStamp:
+                                    requirement.getUpdatedTimeStamp(),
                             }
                         }),
                 },

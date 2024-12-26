@@ -11,6 +11,8 @@ export interface IRequirementCommand {
     getTitle(): string
     getId(): string
     getDeleted(): boolean
+    getUpdatedTimeStamp(): number
+    getCreatedTimeStamp(): number
 }
 
 export type TRequirementStats = {
@@ -32,10 +34,20 @@ abstract class RequirementCommand implements IRequirementCommand {
     protected isExecuted: boolean
     protected transactionTypeCode: number
     protected deleted: boolean
+    protected updatedTimeStamp: number
+    protected createdTimeStamp: number
 
     abstract executeWithValue(value: number): number
 
     abstract execute(person: IPerson): boolean
+
+    getCreatedTimeStamp(): number {
+        return this.createdTimeStamp
+    }
+
+    getUpdatedTimeStamp(): number {
+        return this.updatedTimeStamp
+    }
 
     getDeleted(): boolean {
         return this.deleted
@@ -85,6 +97,8 @@ abstract class RequirementCommand implements IRequirementCommand {
         this.title = title
         this.transactionTypeCode = transactionTypeCode
         this.deleted = false
+        this.createdTimeStamp = Date.now()
+        this.updatedTimeStamp = Date.now()
     }
 }
 

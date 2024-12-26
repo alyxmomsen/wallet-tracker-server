@@ -25,13 +25,15 @@ import {
 } from './auth-service/AuthService'
 import { IRequirementStatsType } from './types/commonTypes'
 import { SimpleLogger } from '../../utils/SimpleLogger'
-import jwt from 'jsonwebtoken'
 import { IJWTokenService, JWTokenService } from './services/jwt-token-service'
 import {
     IReplicationService,
     UserReplicationService,
 } from './services/replication-service'
-import { compose } from 'redux'
+import {
+    IUsersPoolStorage,
+    UserPoolStoragee,
+} from './services/usersPoolStorage'
 
 // const jwt = require('jsonwebtoken');
 
@@ -43,11 +45,6 @@ export interface IApplicationFacade {
         > & { authToken: string }
     ): Promise<any>
     deleteUserRequirement(requirementId: string, token: string): Promise<any>
-    addUserIntoThePool(
-        username: string,
-        password: string,
-        userId: string
-    ): IPerson | null
     addUserAsync(
         username: string,
         password: string
@@ -60,11 +57,10 @@ export interface IApplicationFacade {
         authToken: string
     } | null>
     getPersonByID(id: string): IPerson | null
-    getPersons(): IPerson[]
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>): void
     update(): void
     getUserById(id: string): Promise<IPerson | null>
-    getPersonDataByIdAsync(id: string): Promise<{
+    getPersonStatsByIdAsync(id: string): Promise<{
         userData: TUserData | null
         details: {
             code: number
@@ -83,29 +79,7 @@ export interface IApplicationFacade {
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
     async replicateUser(newUserData: IUserStats): Promise<any> {
-        const fetchedUsers: IPerson[] = []
-
-        for (const user of this.usersPool) {
-            if (user.getId() === newUserData.id) {
-                fetchedUsers.push(user)
-            }
-        }
-
-        console.log(
-            '>>> update user :: fetched users lenghts: ' + fetchedUsers.length
-        )
-
-        if (fetchedUsers.length > 1) {
-            return
-        }
-
-        if (fetchedUsers.length < 0) return
-
-        if (fetchedUsers.length === 0) return
-
-        const fetchedUser = fetchedUsers[0]
-
-        // this.replicationService.addIntoQueue(fetchedUser) ;
+        const theUser = this.usersPoolStorage.getUserById(newUserData.id)
     }
 
     async loginUser(
@@ -136,24 +110,11 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         log('matching users...')
 
-        const matchedUsersById = this.usersPool.filter((elem) => {
-            return elem.getId() === userId
-        })
+        const matchedUser = this.usersPoolStorage.getUserById(userId)
 
-        log('matched user: ')
-        console.log('>>> login user :: ::', matchedUsersById[0])
-
-        /* -------------------------------- */
-
-        if (matchedUsersById.length > 1) return null
-
-        /* -------------------------------- */
-
-        if (matchedUsersById.length === 0) return null
-
-        /* -------------------------------- */
-
-        const matchedUser = matchedUsersById[0]
+        if (matchedUser === null) {
+            return null
+        }
 
         const authToken = this.jsonWebTokenService.sign(matchedUser.getId())
 
@@ -225,6 +186,8 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                 isExecuted: elem.isExecuted,
                 title: elem.title,
                 value: elem.value,
+                updatedTimeStamp: elem.updatedTimeStamp,
+                createdTimeStamp: elem.createdTimeStamp,
             }
         })
 
@@ -249,9 +212,9 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         log(`METHOD deleteUserRequirement STARTED`)
         log(`arguments: ${requirementId} , ${token}`)
 
-        const response = this.checkUserAuth(token)
+        const jwrVerifyResult = this.jsonWebTokenService.verify(token)
 
-        if (response.payload === null) {
+        if (jwrVerifyResult === null) {
             log(`token failed`)
 
             return
@@ -259,28 +222,18 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         log(`token is successfully`)
 
-        const updatedToken = response.payload.updatedToken
+        const { value: userId } = jwrVerifyResult
 
-        const filtredPool = this.usersPool.filter((elem) => {
-            return elem.getId() === token
-        })
+        const userById = this.usersPoolStorage.getUserById(userId)
 
-        if (filtredPool.length > 1 || filtredPool.length < 0) {
-            log('ERROR : multipe users or "VAlue < 0"')
-
-            return
-        }
-
-        if (filtredPool.length === 0) {
+        if (userById === null) {
             log('user not exist in the users pool')
 
             return
         }
 
-        const user = filtredPool[0]
-
         log('checking requirements...')
-        const requirementsToDelete = user
+        const requirementsToDelete = userById
             .getAllReauirementCommands()
             .filter((elem) => {})
 
@@ -315,15 +268,9 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     }
 
     getPersonByID(id: string): IPerson | null {
-        const users = this.usersPool.filter((user) => {
-            return user.getId() === id
-        })
+        const userById = this.usersPoolStorage.getUserById(id)
 
-        if (users.length > 1) {
-            throw new Error(`Internal error: multiple users found for ID ${id}`)
-        }
-
-        return users.length ? users[0] : null
+        return userById
     }
 
     async addUserRequirement(
@@ -342,7 +289,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             return null
         }
 
-        const userId = response.value
+        const { value: userId } = response
 
         const user = await this.getUserById(userId)
 
@@ -413,24 +360,13 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     }
 
     getPersonRequirementsAsync(id: string): IRequirementStatsType[] {
-        const users: IPerson[] = []
+        const userById = this.usersPoolStorage.getUserById(id)
 
-        for (const user of this.usersPool) {
-            const userId = user.getId()
-
-            if (userId === id) {
-                users.push(user)
-            }
-        }
-
-        const usersLength = users.length
-
-        if (usersLength > 1) {
-            new Error('users by id length are no one: ' + users.length)
+        if (userById === null) {
             return []
         }
 
-        const requirements: IRequirementStatsType[] = users[0]
+        const requirements: IRequirementStatsType[] = userById
             .getAllReauirementCommands()
             .map((requirement) => {
                 const dateToExecute = requirement.getExecutionDate()
@@ -449,9 +385,11 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                     id,
                     title,
                     value,
-                    userId: users[0].getId(),
+                    userId: userById.getId(),
                     isExecuted,
                     deleted: false,
+                    createdTimeStamp: requirement.getCreatedTimeStamp(),
+                    updatedTimeStamp: requirement.getUpdatedTimeStamp(),
                 }
             })
 
@@ -460,56 +398,30 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
     addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>) {}
 
-    addUserIntoThePool(
-        username: string,
-        password: string,
-        userId: string
-    ): IPerson | null {
-        for (const userOfThePool of this.usersPool) {
-            const userNameOfUserOfPool = userOfThePool.getUserName()
-
-            if (userNameOfUserOfPool === username) {
-                return null
-            }
-
-            const userIdOfUserOfPool = userOfThePool.getId()
-
-            if (userIdOfUserOfPool === userId) {
-                return null
-            }
-        }
-
-        this.dataBaseConnector.addPersonAsync(username, password)
-
-        return null
-    }
-
     async addUserAsync(
         username: string,
         password: string
     ): Promise<TDatabaseResultStatus<Pick<IUserStats, 'id'>>> {
         // проверка есть ле в пуле пользователь с такими данными
-        for (const userOfPool of this.usersPool) {
-            const usernameOfObjectPool = userOfPool.getUserName()
-            if (usernameOfObjectPool === username) {
-                return {
-                    status: false,
-                    message: 'user name like the pool',
-                    userData: null,
-                }
-                break
+
+        const isExist = this.usersPoolStorage.checkByName(username)
+
+        if (isExist) {
+            return {
+                status: false,
+                message: 'user already exists',
+                userData: null,
             }
         }
 
         const newUser = await this.personFactory.createAsync(
             username,
             password,
-            this.usersPool,
             this.dataBaseConnector
         )
 
         if (newUser) {
-            this.usersPool.push(newUser)
+            this.usersPoolStorage.addUser(newUser.getId(), newUser)
 
             return {
                 status: true,
@@ -527,53 +439,29 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         }
     }
 
-    getPersons() {
-        return this.usersPool
-    }
-
     async getUserById(id: string): Promise<IPerson | null> {
-        const users = this.usersPool.filter((user) => user.getId() === id)
+        const userById = this.usersPoolStorage.getUserById(id)
 
-        console.log('user filter: ', users)
-
-        if (users.length > 1) {
-            return null
-        }
-
-        return users.length > 0 ? users[0] : null
+        return userById
     }
 
-    async getPersonDataByIdAsync(id: string): Promise<{
+    async getPersonStatsByIdAsync(id: string): Promise<{
         userData: TUserData | null
         details: {
             code: number
             description: string
         }
     }> {
-        // const userData = await this.dataBaseConnector.getPersonById(id)
+        const userById = this.usersPoolStorage.getUserById(id)
 
-        const users: IPerson[] = this.usersPool.filter((elem) => {
-            return elem.getId() === id
-        })
-
-        if (users.length > 1) {
-            return {
-                userData: null,
-                details: {
-                    code: 1,
-                    description: 'internal error: user amount too match',
-                },
-            }
-        }
-
-        const userData: Omit<IUserStats, 'password'> | null = users.length
+        const userData: Omit<IUserStats, 'password'> | null = userById
             ? {
-                  name: users[0].getUserName(),
-                  wallet: users[0].getWalletBalance(),
-                  id: users[0].getId(),
+                  name: userById.getUserName(),
+                  wallet: userById.getWalletBalance(),
+                  id: userById.getId(),
                   requirements: [],
-                  createdTimeStamp: users[0].getCreatedTimeStamp(),
-                  updatedTimeStamp: users[0].getUpdatedTimeStamp(),
+                  createdTimeStamp: userById.getCreatedTimeStamp(),
+                  updatedTimeStamp: userById.getUpdatedTimeStamp(),
               }
             : null
 
@@ -588,19 +476,22 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
     update() {}
 
-    private usersPool: IPerson[]
+    // private usersPool: IPerson[]
     private static instance: ApplicationSingletoneFacade | null = null
     private dataBaseConnector: IDataBaseConnector
     private authService: IAuthService
     private personFactory: IPersonFactory
     private jsonWebTokenService: IJWTokenService
     private replicationService: IReplicationService
+    private usersPoolStorage: IUsersPoolStorage
 
     private constructor(
         dataBaseConnector: IDataBaseConnector,
         personFactory: IPersonFactory,
         authService: IAuthService
     ) {
+        this.usersPoolStorage = new UserPoolStoragee()
+
         const log = new SimpleLogger('app constructor', false).createLogger()
 
         log(`aplication constructor started`, null, true)
@@ -611,7 +502,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         this.authService = authService
         this.dataBaseConnector = dataBaseConnector
         this.personFactory = personFactory
-        this.usersPool = []
+        // this.usersPool = []
         log(
             'connecting to data base started at ' +
                 new Date().toLocaleTimeString()
@@ -701,7 +592,22 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                 })
             ).then((resolves) => {
                 resolves.forEach((elem) => {
-                    this.usersPool.push(elem.subj)
+                    this.usersPoolStorage.addUser(elem.subj.getId(), elem.subj)
+
+                    // this.usersPool.push(elem.subj)
+                })
+
+                const log = new SimpleLogger(
+                    'users pool storage'
+                ).createLogger()
+
+                resolves.forEach((item) => {
+                    // const result = this.usersPoolStorage.addUser(item.subj.getId(), item.subj);
+
+                    log(
+                        'user added into users pool storage. user name is : ' +
+                            item.subj.getUserName()
+                    )
                 })
 
                 log(`users pool is updated`.toUpperCase(), null, true)
