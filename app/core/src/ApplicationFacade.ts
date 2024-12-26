@@ -27,6 +27,11 @@ import { IRequirementStatsType } from './types/commonTypes'
 import { SimpleLogger } from '../../utils/SimpleLogger'
 import jwt from 'jsonwebtoken'
 import { IJWTokenService, JWTokenService } from './services/jwt-token-service'
+import {
+    IReplicationService,
+    UserReplicationService,
+} from './services/replication-service'
+import { compose } from 'redux'
 
 // const jwt = require('jsonwebtoken');
 
@@ -34,8 +39,8 @@ export interface IApplicationFacade {
     addUserRequirement(
         requirementFields: Omit<
             IRequirementStatsType,
-            'id' | 'isExecuted' | 'deleted'
-        >
+            'isExecuted' | 'id' | 'deleted' | 'userId'
+        > & { authToken: string }
     ): Promise<any>
     deleteUserRequirement(requirementId: string, token: string): Promise<any>
     addUserIntoThePool(
@@ -46,14 +51,12 @@ export interface IApplicationFacade {
     addUserAsync(
         username: string,
         password: string
-    ): Promise<TDatabaseResultStatus>
+    ): Promise<TDatabaseResultStatus<Pick<IUserStats, 'id'>>>
     loginUser(
         userName: string,
         password: string
     ): Promise<{
-        userStats: IUserStats & {
-            requirements: Omit<IRequirementStatsType, 'userId'>[]
-        }
+        userStats: Omit<IUserStats, 'id' | 'password'>
         authToken: string
     } | null>
     getPersonByID(id: string): IPerson | null
@@ -72,24 +75,14 @@ export interface IApplicationFacade {
     getWalletsByUserIdIdAsync(id: string): Promise<TWalletData[]>
     checkUserAuth(id: string): TAuthServiceCheckTokenResponse
     getUserWithAuthToken(token: string): Promise<{
-        userStats: IUserStats & {
-            requirements: Omit<IRequirementStatsType, 'userId'>[]
-        }
+        userStats: Omit<IUserStats, 'id' | 'password'>
         authToken: string
     } | null>
-    replicationUser(
-        newUserData: IUserStats & { id: string } & {
-            requirements: Omit<IRequirementStatsType, 'userId'>[]
-        }
-    ): Promise<any>
+    replicateUser(newUserData: IUserStats): Promise<any>
 }
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
-    async replicationUser(
-        newUserData: IUserStats & { id: string } & {
-            requirements: Omit<IRequirementStatsType, 'userId'>[]
-        }
-    ): Promise<any> {
+    async replicateUser(newUserData: IUserStats): Promise<any> {
         const fetchedUsers: IPerson[] = []
 
         for (const user of this.usersPool) {
@@ -112,26 +105,22 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         const fetchedUser = fetchedUsers[0]
 
-        fetchedUser.replicateWalletBalance(newUserData.wallet)
-        fetchedUser.replicateRequirements(
-            newUserData.requirements,
-            new RequiremenCommandFactory()
-        )
+        // this.replicationService.addIntoQueue(fetchedUser) ;
     }
 
     async loginUser(
         userName: string,
         password: string
     ): Promise<{
-        userStats: IUserStats & {
-            requirements: Omit<IRequirementStatsType, 'userId'>[]
-        }
+        userStats: Omit<IUserStats, 'id' | 'password'>
         authToken: string
     } | null> {
         const log = new SimpleLogger('login user').createLogger()
 
-        const dataBaseResponse: TDatabaseResultStatus =
+        const dataBaseResponse: TDatabaseResultStatus<Pick<IUserStats, 'id'>> =
             await this.dataBaseConnector.getPersonByFields(userName, password)
+
+        console.log('>>> data base response :: ', dataBaseResponse)
 
         /* -------------------------- */
 
@@ -171,6 +160,8 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return {
             authToken: authToken,
             userStats: {
+                createdTimeStamp: 0,
+                updatedTimeStamp: 0,
                 name: matchedUser.getUserName(),
                 requirements: matchedUser
                     .getAllReauirementCommands()
@@ -193,9 +184,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     }
 
     async getUserWithAuthToken(token: string): Promise<{
-        userStats: IUserStats & {
-            requirements: Omit<IRequirementStatsType, 'userId'>[]
-        }
+        userStats: Omit<IUserStats, 'id' | 'password'>
         authToken: string
     } | null> {
         const log = new SimpleLogger('Get user with authToken').createLogger()
@@ -239,12 +228,12 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             }
         })
 
-        const userData: IUserStats & {
-            requirements: Omit<IRequirementStatsType, 'userId'>[]
-        } = {
+        const userData: Omit<IUserStats, 'id' | 'password'> = {
             name: user.getUserName(),
             wallet: user.getWalletBalance(),
             requirements,
+            createdTimeStamp: user.getCreatedTimeStamp(),
+            updatedTimeStamp: user.getUpdatedTimeStamp(),
         }
 
         return { userStats: userData, authToken: token }
@@ -340,12 +329,22 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     async addUserRequirement(
         requirementFields: Omit<
             IRequirementStatsType,
-            'isExecuted' | 'id' | 'deleted'
-        >
+            'isExecuted' | 'id' | 'deleted' | 'userId'
+        > & { authToken: string }
     ): Promise<IPerson | null> {
         console.log(`>>> check if user pool contain user by this ID`)
 
-        const user = await this.getUserById(requirementFields.userId)
+        const response = this.jsonWebTokenService.verify(
+            requirementFields.authToken
+        )
+
+        if (response === null) {
+            return null
+        }
+
+        const userId = response.value
+
+        const user = await this.getUserById(userId)
 
         if (user === null) {
             console.log(`>>> user is not exist or something wrong`)
@@ -365,7 +364,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         const newReqFields = await this.dataBaseConnector.addUserRequirement(
             { ...requirementFields },
-            requirementFields.userId
+            userId
         )
 
         if (newReqFields === null) {
@@ -488,7 +487,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     async addUserAsync(
         username: string,
         password: string
-    ): Promise<TDatabaseResultStatus> {
+    ): Promise<TDatabaseResultStatus<Pick<IUserStats, 'id'>>> {
         // проверка есть ле в пуле пользователь с такими данными
         for (const userOfPool of this.usersPool) {
             const usernameOfObjectPool = userOfPool.getUserName()
@@ -567,14 +566,14 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             }
         }
 
-        const userData:
-            | (TUserData & { requirements: IRequirementStatsType[] })
-            | null = users.length
+        const userData: Omit<IUserStats, 'password'> | null = users.length
             ? {
-                  userName: users[0].getUserName(),
+                  name: users[0].getUserName(),
                   wallet: users[0].getWalletBalance(),
                   id: users[0].getId(),
                   requirements: [],
+                  createdTimeStamp: users[0].getCreatedTimeStamp(),
+                  updatedTimeStamp: users[0].getUpdatedTimeStamp(),
               }
             : null
 
@@ -595,6 +594,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     private authService: IAuthService
     private personFactory: IPersonFactory
     private jsonWebTokenService: IJWTokenService
+    private replicationService: IReplicationService
 
     private constructor(
         dataBaseConnector: IDataBaseConnector,
@@ -605,6 +605,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         log(`aplication constructor started`, null, true)
 
+        this.replicationService = new UserReplicationService()
         this.jsonWebTokenService = new JWTokenService()
 
         this.authService = authService
@@ -628,15 +629,17 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                         (globalResolve) => {
                             const userId = user.id
                             const newUser = new OrdinaryPerson(
-                                user.userName,
+                                user.name,
                                 0,
-                                userId
+                                userId,
+                                user.updatedTimeStamp,
+                                user.createdTimeStamp
                             )
 
                             Promise.all([
                                 new Promise((resolve) => {
                                     log(
-                                        `>>> getting user "${user.userName}" wallet...`
+                                        `>>> getting user "${user.name}" wallet...`
                                     )
                                     dataBaseConnector
                                         .getPersonWalletByUserId(userId)
@@ -652,14 +655,14 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                                                 newUser.incrementWallet(balance)
                                             }
                                             log(
-                                                `>>> ${user.userName} user wallet is updated`
+                                                `>>> ${user.name} user wallet is updated`
                                             )
                                             resolve('foo')
                                         })
                                 }),
                                 new Promise((resolve) => {
                                     log(
-                                        `>>> getting ${user.userName} requirements...`
+                                        `>>> getting ${user.name} requirements...`
                                     )
                                     dataBaseConnector
                                         .getRequiremntsByUserId(userId)
@@ -681,7 +684,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                                                 }
                                             )
                                             log(
-                                                `${user.userName} requirement is updated`
+                                                `${user.name} requirement is updated`
                                             )
                                             resolve('bar')
                                         })

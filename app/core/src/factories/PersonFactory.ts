@@ -31,7 +31,17 @@ export abstract class PersonFactory implements IPersonFactory {
             return null
         }
 
-        const user = new OrdinaryPerson(username, 0, userId)
+        if (result.userData === null) {
+            return null
+        }
+
+        const user = new OrdinaryPerson(
+            username,
+            0,
+            userId,
+            result.userData.updatedTimeStamp,
+            result.userData.createdTimeStamp
+        )
 
         return user
     }

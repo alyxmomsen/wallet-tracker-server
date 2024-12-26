@@ -37,6 +37,7 @@ export class JWTokenService implements IJWTokenService {
         exp: number
     } | null {
         const log = this.loggerService.createLogger()
+        log('token', { token })
         log('trying verify...')
 
         try {
@@ -50,7 +51,7 @@ export class JWTokenService implements IJWTokenService {
 
             return result
         } catch (error) {
-            // console.log({ e: error })
+            console.log({ e: error })
 
             return null
         }

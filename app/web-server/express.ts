@@ -33,9 +33,7 @@ type TCheckUserAuthResponseData = {
 
 webApp.post('/update-user', async (req: Request, res: Response) => {
     const token = req.headers['x-auth']
-    const body = req.body as IUserStats & {
-        requirements: Omit<IRequirementStatsType, 'userId'>[]
-    }
+    const body = req.body as IUserStats
 
     console.log('>>> update user :: token: ', { token })
     console.log('>>> update user :: body: ', { body })
@@ -54,7 +52,7 @@ webApp.post('/update-user', async (req: Request, res: Response) => {
 
     // --------------------------
 
-    myApplication.replicationUser({ ...body, id: token })
+    myApplication.replicateUser({ ...body, id: token })
 
     return res.status(200).json({
         payload: { foo: 'bar' },
@@ -227,9 +225,7 @@ webApp.post('/get-user-with-token', async (req: Request, res: Response) => {
             details: 'user data and auth token',
         },
     } as TResponseJSONData<{
-        userStats: IUserStats & {
-            requirements: Omit<IRequirementStatsType, 'userId'>[]
-        }
+        userStats: IUserStats
         authToken: string
     }>)
 })
@@ -286,9 +282,7 @@ webApp.post(
                 details: 'user data , you please',
             },
         } as TResponseJSONData<{
-            userStats: IUserStats & {
-                requirements: Omit<IRequirementStatsType, 'userId'>[]
-            }
+            userStats: IUserStats
             authToken: string
         }>)
     }
@@ -372,10 +366,12 @@ webApp.post(
             } as TResponseJSONData<null>)
         }
 
+        console.log('>>> add user requirement :: ', xAuth, body)
+
         try {
             const updatedPerson = await myApplication.addUserRequirement({
                 ...body,
-                userId: xAuth,
+                authToken: xAuth,
             })
 
             if (updatedPerson === null) {
@@ -388,9 +384,8 @@ webApp.post(
                 } as TResponseJSONData<null>
             }
 
-            const requirementsAsStats: IRequirementStatsType[] = updatedPerson
-                .getAllReauirementCommands()
-                .map((requirement) => {
+            const requirementsAsStats: Omit<IRequirementStatsType, 'userId'>[] =
+                updatedPerson.getAllReauirementCommands().map((requirement) => {
                     return {
                         cashFlowDirectionCode:
                             requirement.getTransactionTypeCode(),
@@ -415,9 +410,7 @@ webApp.post(
                     code: 0,
                     details: 'updated user data',
                 },
-            } as TResponseJSONData<
-                IUserStats & { requirements: IRequirementStatsType[] }
-            >)
+            } as TResponseJSONData<IUserStats>)
         } catch (error) {
             console.log({ error })
             return res.status(500).json({
@@ -457,8 +450,10 @@ type TAuthUserData = {
 }
 
 export type TUserData = {
-    userName: string
+    name: string
     wallet: number
+    createdTimeStamp: number
+    updatedTimeStamp: number
     id: string
 }
 

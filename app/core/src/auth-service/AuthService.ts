@@ -1,7 +1,11 @@
 import { IDataBaseConnector, TDatabaseResultStatus } from '../../../db/app'
+import { IUserStats } from '../person/Person'
 
 export interface IAuthService {
-    authUser(username: string, password: string): Promise<TDatabaseResultStatus>
+    authUser(
+        username: string,
+        password: string
+    ): Promise<TDatabaseResultStatus<Pick<IUserStats, 'id'>>>
     checkToken(token: string): TAuthServiceCheckTokenResponse
 }
 

@@ -31,7 +31,7 @@ export class AddUserRequirementService implements IAddUserRequirementService {
         try {
             const updatedUser = await app.addUserRequirement({
                 ...body,
-                userId: userId,
+                authToken: userId,
             })
             // TResponseJSONData<TUserData>
 
@@ -47,8 +47,10 @@ export class AddUserRequirementService implements IAddUserRequirementService {
 
             return {
                 payload: {
+                    createdTimeStamp: updatedUser.getCreatedTimeStamp(),
+                    updatedTimeStamp: updatedUser.getCreatedTimeStamp(),
                     id: updatedUser.getId(),
-                    userName: updatedUser.getUserName(),
+                    name: updatedUser.getUserName(),
                     wallet: updatedUser.getWalletBalance(),
                     requirements: updatedUser
                         .getAllReauirementCommands()

@@ -1,4 +1,3 @@
-import { IRequirementCommandFactory } from '../requirement-command/factories/Requirement-command-factory'
 import { IRequirementCommand } from '../requirement-command/RequirementCommand'
 import { IRequirementStatsType } from '../types/commonTypes'
 import { IWallet, IWallet as number, Wallet } from '../Wallet'
@@ -20,6 +19,11 @@ export type TWalletTrackValue = {
 export interface IUserStats {
     name: string
     wallet: number
+    id: string
+    requirements: Omit<IRequirementStatsType, 'userId'>[]
+    createdTimeStamp: number
+    updatedTimeStamp: number
+    password: string
 }
 
 export interface IPerson {
@@ -38,35 +42,12 @@ export interface IPerson {
     getStatusDescription(): string
     setStatus(status: IPersonStatusSystem): boolean
     getId(): string
-    replicateWalletBalance(value: number): void
-    replicateRequirements(
-        requirementsStats: Omit<IRequirementStatsType, 'userId'>[],
-        requirementFactory: IRequirementCommandFactory
-    ): void
+    getCreatedTimeStamp(): number
+
+    getUpdatedTimeStamp(): number
 }
 
 export abstract class Person implements IPerson {
-    replicateWalletBalance(value: number): void {
-        const balance = this.wallet.updateBalance(value)
-    }
-
-    replicateRequirements(
-        requirementsStats: Omit<IRequirementStatsType, 'userId'>[],
-        requirementFactory: IRequirementCommandFactory
-    ): void {
-        const newRequirementBalancePool: IRequirementCommand[] = []
-
-        for (const requirement of requirementsStats) {
-            const newRequirement = requirementFactory.create(requirement)
-
-            if (newRequirement === null) continue
-
-            newRequirementBalancePool.push(newRequirement)
-        }
-
-        this.requirementTransactionCommandsPool = newRequirementBalancePool
-    }
-
     getId(): string {
         return this.id
     }
@@ -167,7 +148,21 @@ export abstract class Person implements IPerson {
         this.updateStatus = value
     }
 
-    constructor(wallet: IWallet, name: string, userId: string) {
+    getCreatedTimeStamp(): number {
+        return this.createdTimeStamp
+    }
+
+    getUpdatedTimeStamp(): number {
+        return this.updatedTimeStamp
+    }
+
+    constructor(
+        wallet: IWallet,
+        name: string,
+        userId: string,
+        updatedTimeStamp: number,
+        createdTimeStamp: number
+    ) {
         this.wallet = wallet
         this.name = name
         this.requirementTransactionCommandsPool = []
@@ -175,21 +170,36 @@ export abstract class Person implements IPerson {
         this.status = new GoingSleepStatus()
         this.id = userId
         this.updateStatus = 0
+        this.createdTimeStamp = createdTimeStamp
+        this.updatedTimeStamp = updatedTimeStamp
     }
 
     private id: string
     protected name: string
     protected wallet: IWallet
     protected requirementTransactionCommandsPool: IRequirementCommand[]
-
+    protected createdTimeStamp: number
+    protected updatedTimeStamp: number
     protected averageSpending: number
     protected status: IPersonStatusSystem
     protected updateStatus: number
 }
 
 export class OrdinaryPerson extends Person {
-    constructor(name: string, walletInitValue: number, userId: string) {
-        super(new Wallet(walletInitValue), name, userId)
+    constructor(
+        name: string,
+        walletInitValue: number,
+        userId: string,
+        updatedTimeStamp: number,
+        createdTimeStamp: number
+    ) {
+        super(
+            new Wallet(walletInitValue),
+            name,
+            userId,
+            updatedTimeStamp,
+            createdTimeStamp
+        )
     }
 }
 

@@ -16,10 +16,12 @@ import {
     QuerySnapshot,
     QueryDocumentSnapshot,
     DocumentReference,
+    updateDoc,
 } from 'firebase/firestore'
 import { TDBUserData, TUserData } from '../web-server/express'
 import { IRequirementStatsType } from '../core/src/types/commonTypes'
 import { SimpleLogger } from '../utils/SimpleLogger'
+import { IUserStats } from '../core/src/person/Person'
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -43,32 +45,38 @@ const db = getFirestore(app)
 
 /* data base connector */
 
-export type TDatabaseResultStatus = {
+export type TDatabaseResultStatus<T> = {
     status: boolean
     message: string
-    userData: {
-        id: string
-    } | null
+    userData: T | null
 }
 
 export interface IDataBaseConnector {
     addUserRequirement(
-        data: Omit<IRequirementStatsType, 'isExecuted' | 'id' | 'deleted'>,
+        data: Omit<
+            IRequirementStatsType,
+            'isExecuted' | 'id' | 'deleted' | 'userId'
+        >,
         userId: string
     ): Promise<IRequirementStatsType | null>
     getPersonByFields(
         username: string,
         password: string
-    ): Promise<TDatabaseResultStatus>
+    ): Promise<TDatabaseResultStatus<Pick<IUserStats, 'id'>>>
     addPersonAsync(
         username: string,
         password: string
-    ): Promise<TDatabaseResultStatus>
+    ): Promise<
+        TDatabaseResultStatus<
+            Omit<IUserStats, 'password' | 'requirements' | 'wallet'>
+        >
+    >
     getAllPersons(): Promise<Omit<TUserData, 'wallet'>[]>
     getRequiremntsByUserId(userId: string): Promise<IRequirementStatsType[]>
     getPersonById(id: string): Promise<Omit<TUserData, 'wallet'> | null>
     getDataAsync(): Promise<any>
     getPersonWalletByUserId(id: string): Promise<TWalletData[]>
+    updateUserData(userSubj: Omit<IUserStats, 'requirements'>): Promise<void>
 }
 
 export type TDataBaseUser = {
@@ -102,8 +110,24 @@ export type TWalletDBData = {
 }
 
 export class FirebaseConnector implements IDataBaseConnector {
+    async updateUserData(
+        userSubj: Omit<IUserStats, 'requirements'>
+    ): Promise<void> {
+        const docRef = doc(db, 'persons', userSubj.id)
+
+        await updateDoc(docRef, {
+            name: userSubj.id,
+            wallet: userSubj.wallet,
+        } as Omit<IUserStats, 'id' | 'requirements'>)
+    }
+
+    async updateUserTransactions(data: IRequirementStatsType[]) {}
+
     async addUserRequirement(
-        fields: Omit<IRequirementStatsType, 'isExecuted' | 'id' | 'deleted'>,
+        fields: Omit<
+            IRequirementStatsType,
+            'isExecuted' | 'id' | 'deleted' | 'userId'
+        >,
         userId: string
     ): Promise<IRequirementStatsType | null> {
         console.log('>>> try to add insert the requrement into DB')
@@ -163,10 +187,10 @@ export class FirebaseConnector implements IDataBaseConnector {
     async getPersonByFields(
         username: string,
         password: string
-    ): Promise<TDatabaseResultStatus> {
+    ): Promise<TDatabaseResultStatus<Pick<IUserStats, 'id'>>> {
         const qwery = query(
             collection(db, 'persons'),
-            where('username', '==', username),
+            where('name', '==', username),
             where('password', '==', password)
         )
 
@@ -189,15 +213,15 @@ export class FirebaseConnector implements IDataBaseConnector {
         }
 
         const data = (await snapshots.docs[0].data()) as Omit<
-            TDataBaseUser,
-            'userId'
+            IUserStats,
+            'id' | 'requirements' | 'wallet'
         >
 
-        const { createdUnixDate, password: pass, username: name } = data
+        const { createdTimeStamp, name } = data
 
         const userId = snapshots.docs[0].id
 
-        const returnData: TDatabaseResultStatus = {
+        const returnData: TDatabaseResultStatus<Pick<IUserStats, 'id'>> = {
             message: 'iser is founded',
             status: true,
             userData: {
@@ -216,7 +240,11 @@ export class FirebaseConnector implements IDataBaseConnector {
     async addPersonAsync(
         username: string,
         password: string
-    ): Promise<TDatabaseResultStatus> {
+    ): Promise<
+        TDatabaseResultStatus<
+            Omit<IUserStats, 'password' | 'requirements' | 'wallet'>
+        >
+    > {
         const result = await checkRecordExistsByField(username, password)
 
         if (result.length) {
@@ -227,15 +255,25 @@ export class FirebaseConnector implements IDataBaseConnector {
             }
         }
 
-        const docRef = await addPersonIntoFireStore(username, password)
+        const docRef = await createPersonInFireStore(username, password)
 
         const { id } = docRef
+
+        const docSnap = getDoc(docRef)
+
+        const useData = (await docSnap).data() as Omit<
+            IUserStats,
+            'id' | 'requirements' | 'wallet'
+        >
 
         return {
             status: true,
             message: 'user created',
             userData: {
                 id,
+                createdTimeStamp: useData.createdTimeStamp,
+                name: useData.name,
+                updatedTimeStamp: useData.updatedTimeStamp,
             },
         }
     }
@@ -285,7 +323,7 @@ async function getUserRequirementsByUserId(
 
 async function getPersonsByIdFireBase(
     id: string
-): Promise<Omit<TUserData, 'wallet'> | null> {
+): Promise<Omit<IUserStats, 'wallet' | 'requirements' | 'password'> | null> {
     const docRef = doc(db, 'persons', id)
 
     const docSnap = await getDoc(docRef)
@@ -296,27 +334,32 @@ async function getPersonsByIdFireBase(
 
     const userId = docSnap.id
 
-    const { username } = docSnap.data() as TDBUserData
+    const { name, createdTimeStamp, updatedTimeStamp } = docSnap.data() as Omit<
+        TUserData,
+        'id' | 'wallet' | 'requirements'
+    >
 
     return {
-        userName: username,
+        name,
         id: userId,
-        // requirements: [],
+        createdTimeStamp,
+        updatedTimeStamp,
     }
 }
 
-async function addPersonIntoFireStore(username: string, password: string) {
+async function createPersonInFireStore(username: string, password: string) {
     const docRef = await addDoc(collection(db, 'persons'), {
-        username,
+        name: username,
         password,
-        createdUnixDate: Date.now(),
-    })
+        createdTimeStamp: Date.now(),
+        updatedTimeStamp: Date.now(),
+    } as Omit<IUserStats, 'id' | 'requirements' | 'wallet'>)
 
     return docRef
 }
 
 async function addUserRequirementIntoFireStore(
-    fields: Omit<IRequirementStatsType, 'id' | 'isExecuted'>,
+    fields: Omit<IRequirementStatsType, 'id' | 'isExecuted' | 'userId'>,
     userId: string
 ): Promise<IRequirementStatsType | null> {
     const log = new SimpleLogger(
@@ -404,17 +447,22 @@ async function getAllFireStorePersonDocs(
         return []
     }
 
-    const users: Omit<TUserData, 'wallet'>[] = []
+    const users: Omit<IUserStats, 'wallet' | 'requirements' | 'password'>[] = []
 
-    querySnapshot.forEach((elem) => {
-        if (elem.exists()) {
-            const id = elem.id
-            const { username } = elem.data() as TDBUserData
+    querySnapshot.forEach((docSnap) => {
+        if (docSnap.exists()) {
+            const id = docSnap.id
+            const { name, createdTimeStamp, updatedTimeStamp } =
+                docSnap.data() as Omit<
+                    IUserStats,
+                    'id' | 'wallet' | 'requirements' | 'password'
+                >
 
             users.push({
-                userName: username,
+                name,
                 id,
-                // requirements: [],
+                createdTimeStamp,
+                updatedTimeStamp,
             })
         }
     })
