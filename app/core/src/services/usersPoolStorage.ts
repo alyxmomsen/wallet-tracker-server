@@ -20,6 +20,10 @@ export class UserPoolStoragee implements IUsersPoolStorage {
     }
 
     getUserById(userId: string): IPerson | null {
+        this.usersPool.forEach((elem, i, map) => {
+            console.log('>>> get user by id : mapId: ', i, 'userId: ', userId)
+        })
+
         const user = this.usersPool.get(userId)
 
         if (user === undefined) {

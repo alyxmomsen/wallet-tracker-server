@@ -29,30 +29,32 @@ export class AddUserRequirementService implements IAddUserRequirementService {
         >
     > {
         try {
-            const updatedUser = await app.addUserRequirement({
+            const response = await app.addUserRequirement({
                 ...body,
                 authToken: userId,
             })
             // TResponseJSONData<TUserData>
 
-            if (updatedUser === null) {
+            if (response.payload === null) {
                 return {
                     payload: null,
                     status: {
-                        code: 46465,
-                        details: 'user is not created',
+                        code: response.status.code,
+                        details: response.status.details,
                     },
                 }
             }
 
+            const responsedUser = response.payload
+
             return {
                 payload: {
-                    createdTimeStamp: updatedUser.getCreatedTimeStamp(),
-                    updatedTimeStamp: updatedUser.getCreatedTimeStamp(),
-                    id: updatedUser.getId(),
-                    name: updatedUser.getUserName(),
-                    wallet: updatedUser.getWalletBalance(),
-                    requirements: updatedUser
+                    createdTimeStamp: responsedUser.getCreatedTimeStamp(),
+                    updatedTimeStamp: responsedUser.getCreatedTimeStamp(),
+                    id: responsedUser.getId(),
+                    name: responsedUser.getUserName(),
+                    wallet: responsedUser.getWalletBalance(),
+                    requirements: responsedUser
                         .getAllReauirementCommands()
                         .map((requirement) => {
                             return {

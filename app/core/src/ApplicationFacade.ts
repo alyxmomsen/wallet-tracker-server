@@ -4,15 +4,11 @@ import {
     TWalletData,
 } from '../../db/app'
 import { IPersonFactory } from './factories/PersonFactory'
-import {
-    IPerson,
-    IUserStats,
-    OrdinaryPerson,
-    OrdinaryPerson as User,
-} from './person/Person'
+import { IPerson, IUserStats, OrdinaryPerson } from './person/Person'
 
 import { ITask } from './Task'
-import { TUserData } from '../../web-server/express'
+
+import { TResponseJSONData, TUserData } from '../../web-server/express'
 
 import { IRequirementCommand } from './requirement-command/RequirementCommand'
 import {
@@ -35,15 +31,13 @@ import {
     UserPoolStoragee,
 } from './services/usersPoolStorage'
 
-// const jwt = require('jsonwebtoken');
-
 export interface IApplicationFacade {
     addUserRequirement(
         requirementFields: Omit<
             IRequirementStatsType,
             'isExecuted' | 'id' | 'deleted' | 'userId'
         > & { authToken: string }
-    ): Promise<any>
+    ): Promise<TResponseJSONData<IPerson | null>>
     deleteUserRequirement(requirementId: string, token: string): Promise<any>
     addUserAsync(
         username: string,
@@ -61,7 +55,7 @@ export interface IApplicationFacade {
     update(): void
     getUserById(id: string): Promise<IPerson | null>
     getPersonStatsByIdAsync(id: string): Promise<{
-        userData: TUserData | null
+        userData: Omit<IUserStats, 'password'> | null
         details: {
             code: number
             description: string
@@ -74,12 +68,78 @@ export interface IApplicationFacade {
         userStats: Omit<IUserStats, 'id' | 'password'>
         authToken: string
     } | null>
-    replicateUser(newUserData: IUserStats): Promise<any>
+    replicateUser(
+        newUserData: Omit<IUserStats, 'password' | 'id'> & { token: string }
+    ): Promise<IPerson | null>
 }
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
-    async replicateUser(newUserData: IUserStats): Promise<any> {
-        const theUser = this.usersPoolStorage.getUserById(newUserData.id)
+    async replicateUser(
+        newUserData: Omit<IUserStats, 'password' | 'id'> & { token: string }
+    ): Promise<IPerson | null> {
+        const log = new SimpleLogger('replicate User').createLogger()
+
+        console.log('>>> replicate user ::: data ::: ', newUserData)
+
+        const jwtVerifyResult = this.jsonWebTokenService.verify(
+            newUserData.token
+        )
+
+        if (jwtVerifyResult === null) {
+            log('token is expired , or any case')
+
+            return null
+        }
+
+        log('get user by id...')
+        const theUser = this.usersPoolStorage.getUserById(jwtVerifyResult.value)
+
+        if (theUser === null) {
+            log('user by id is not exist')
+
+            return null
+        } // 204 No Content ;
+
+        log('user is found')
+
+        log('start iteration by requirements stats')
+
+        newUserData.requirements.map((newRequirementStat) => {
+            // log('iteration');
+            // console.log(newRequirementStat.isExecuted);
+            const newRequirementStatId = newRequirementStat.id
+
+            theUser
+                .getAllReauirementCommands()
+                .forEach((requirement, i, arr) => {
+                    if (requirement.getId() === newRequirementStatId) {
+                        const requirementFactory =
+                            new RequiremenCommandFactory()
+
+                        const updatedRequirement = requirementFactory.create({
+                            ...newRequirementStat,
+                        })
+
+                        console.log(
+                            '>>> updated requirement :::',
+                            newRequirementStat,
+                            updatedRequirement
+                        )
+
+                        if (updatedRequirement === null) return null // 500 Internal Server Error
+
+                        log('set update requirement')
+                        console.log(arr === theUser.getAllReauirementCommands())
+                        arr[i] = updatedRequirement
+                    }
+                })
+        })
+
+        theUser.setWalletValue(newUserData.wallet)
+
+        log('updated user data :::')
+        console.log(theUser.getAllReauirementCommands())
+        return theUser
     }
 
     async loginUser(
@@ -273,20 +333,26 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return userById
     }
 
+    // code:2 - not found , 1 - unautorized user , 0 - ok
     async addUserRequirement(
         requirementFields: Omit<
             IRequirementStatsType,
             'isExecuted' | 'id' | 'deleted' | 'userId'
         > & { authToken: string }
-    ): Promise<IPerson | null> {
+    ): Promise<TResponseJSONData<IPerson | null>> {
         console.log(`>>> check if user pool contain user by this ID`)
-
         const response = this.jsonWebTokenService.verify(
             requirementFields.authToken
         )
 
         if (response === null) {
-            return null
+            return {
+                status: {
+                    code: 401,
+                    details: 'unautorized',
+                },
+                payload: null,
+            }
         }
 
         const { value: userId } = response
@@ -296,7 +362,13 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         if (user === null) {
             console.log(`>>> user is not exist or something wrong`)
 
-            return null
+            return {
+                payload: null,
+                status: {
+                    code: 204,
+                    details: 'No Content',
+                },
+            }
         }
 
         console.log(`>>> user is exist`)
@@ -317,7 +389,13 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         if (newReqFields === null) {
             console.log(`>>> try to add requirement into data base  is FAILED`)
 
-            return null
+            return {
+                status: {
+                    code: 500,
+                    details: 'Internal Server Error',
+                },
+                payload: null,
+            }
         }
 
         console.log(`>>> requirement added into Data Base , SUCCESSFULLY`)
@@ -330,7 +408,13 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         if (requirement === null) {
             console.log(`>>> requirement is NOT CREATED !!!`)
-            return null
+            return {
+                status: {
+                    code: 500,
+                    details: 'Internal Server Error',
+                },
+                payload: null,
+            }
         }
 
         console.log(`>>> requirement is CREATED`)
@@ -342,7 +426,13 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         )
         console.log(`>>> user object were trying mutating`)
 
-        return user
+        return {
+            status: {
+                code: 200,
+                details: 'ok',
+            },
+            payload: user,
+        }
     }
 
     checkUserAuth(id: string): TAuthServiceCheckTokenResponse {
@@ -446,7 +536,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     }
 
     async getPersonStatsByIdAsync(id: string): Promise<{
-        userData: TUserData | null
+        userData: Omit<IUserStats, 'password'> | null
         details: {
             code: number
             description: string
@@ -454,19 +544,41 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     }> {
         const userById = this.usersPoolStorage.getUserById(id)
 
-        const userData: Omit<IUserStats, 'password'> | null = userById
-            ? {
-                  name: userById.getUserName(),
-                  wallet: userById.getWalletBalance(),
-                  id: userById.getId(),
-                  requirements: [],
-                  createdTimeStamp: userById.getCreatedTimeStamp(),
-                  updatedTimeStamp: userById.getUpdatedTimeStamp(),
-              }
-            : null
+        if (userById === null)
+            return {
+                userData: null,
+                details: {
+                    code: 501,
+                    description: 'internal error , or something',
+                },
+            } // 503 internal error
+
+        const userStats: Omit<IUserStats, 'password'> = {
+            name: userById.getUserName(),
+            wallet: userById.getWalletBalance(),
+            id: userById.getId(),
+            requirements: userById
+                .getAllReauirementCommands()
+                .map<Omit<IRequirementStatsType, 'userId'>>((elem) => {
+                    return {
+                        cashFlowDirectionCode: elem.getTransactionTypeCode(),
+                        createdTimeStamp: elem.getCreatedTimeStamp(),
+                        dateToExecute: elem.getExecutionDate(),
+                        description: elem.getDescription(),
+                        id: elem.getId(),
+                        isExecuted: elem.checkIfExecuted(),
+                        title: elem.getTitle(),
+                        updatedTimeStamp: elem.getUpdatedTimeStamp(),
+                        value: elem.getValue(),
+                        deleted: elem.getDeleted(),
+                    } as Omit<IRequirementStatsType, 'userId'>
+                }),
+            createdTimeStamp: userById.getCreatedTimeStamp(),
+            updatedTimeStamp: userById.getUpdatedTimeStamp(),
+        }
 
         return {
-            userData: userData,
+            userData: userStats,
             details: {
                 code: 0,
                 description: 'OK',
@@ -484,12 +596,15 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     private jsonWebTokenService: IJWTokenService
     private replicationService: IReplicationService
     private usersPoolStorage: IUsersPoolStorage
+    // private webServer:Express ;
 
     private constructor(
         dataBaseConnector: IDataBaseConnector,
         personFactory: IPersonFactory,
         authService: IAuthService
     ) {
+        // this.webServer = webServerExpress;
+
         this.usersPoolStorage = new UserPoolStoragee()
 
         const log = new SimpleLogger('app constructor', false).createLogger()
@@ -615,5 +730,16 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
             log('app constructor is finished'.toUpperCase(), null, true)
         })
+
+        // this.webServer.
+
+        // this.webServer.use(cors());
+        // this.webServer.use(bodyParser());
+        // this.webServer.use(express.json());
+
+        // const port = 3030
+        // this.webServer.listen(port, () => {
+        //     console.log(`Сервер запущен на http://localhost:${port}`)
+        // })
     }
 }

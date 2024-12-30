@@ -37,8 +37,9 @@ export class JWTokenService implements IJWTokenService {
         exp: number
     } | null {
         const log = this.loggerService.createLogger()
-        log('token', { token })
+
         log('trying verify...')
+        log('internal params: ' + token)
 
         try {
             const result = jwt.verify(token, this.secret) as {
@@ -47,11 +48,12 @@ export class JWTokenService implements IJWTokenService {
                 exp: number
             }
 
-            log('verifyed', result)
+            log('VERIFIED')
+            log('Token is VALID')
 
             return result
         } catch (error) {
-            console.log({ e: error })
+            log('FAIL. token INVALID. maibe expired?')
 
             return null
         }

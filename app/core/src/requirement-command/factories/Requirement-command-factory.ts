@@ -22,7 +22,8 @@ export class RequiremenCommandFactory implements IRequirementCommandFactory {
                     fields.value,
                     fields.title,
                     fields.description,
-                    fields.dateToExecute
+                    fields.dateToExecute,
+                    fields.isExecuted
                 )
             case 1:
                 return new DecrementMoneyRequirementCommand(
@@ -30,7 +31,8 @@ export class RequiremenCommandFactory implements IRequirementCommandFactory {
                     fields.value,
                     fields.title,
                     fields.description,
-                    fields.dateToExecute
+                    fields.dateToExecute,
+                    fields.isExecuted
                 )
             default:
                 return null

@@ -44,9 +44,15 @@ export interface IPerson {
     getId(): string
     getCreatedTimeStamp(): number
     getUpdatedTimeStamp(): number
+    setWalletValue(value: number): boolean
 }
 
 export abstract class Person implements IPerson {
+    setWalletValue(value: number): boolean {
+        this.wallet.updateBalance(value)
+        return true
+    }
+
     getId(): string {
         return this.id
     }

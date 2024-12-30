@@ -87,13 +87,14 @@ abstract class RequirementCommand implements IRequirementCommand {
         title: string,
         description: string,
         date: number,
-        transactionTypeCode: number
+        transactionTypeCode: number,
+        isExecuted: boolean
     ) {
         this.id = id
         this.value = value
         this.description = description
         this.date = date
-        this.isExecuted = false
+        this.isExecuted = isExecuted
         this.title = title
         this.transactionTypeCode = transactionTypeCode
         this.deleted = false
@@ -124,9 +125,10 @@ export class IncrementMoneyRequirementCommand extends RequirementCommand {
         value: number,
         title: string,
         description: string,
-        date: number
+        date: number,
+        executed: boolean
     ) {
-        super(id, value, title, description, date, 1)
+        super(id, value, title, description, date, 1, executed)
     }
 }
 
@@ -160,8 +162,9 @@ export class DecrementMoneyRequirementCommand extends RequirementCommand {
         value: number,
         title: string,
         description: string,
-        date: number
+        date: number,
+        executed: boolean
     ) {
-        super(id, value, title, description, date, 0)
+        super(id, value, title, description, date, 0, executed)
     }
 }
