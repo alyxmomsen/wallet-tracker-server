@@ -176,7 +176,10 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             return null
         }
 
-        const authToken = this.jsonWebTokenService.sign(matchedUser.getId())
+        const authToken = this.jsonWebTokenService.sign(
+            matchedUser.getId(),
+            '1h'
+        )
 
         return {
             authToken: authToken,

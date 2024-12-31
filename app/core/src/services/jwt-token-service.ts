@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken'
 import { SimpleLogger } from '../../../utils/SimpleLogger'
 
 export interface IJWTokenService {
-    sign(value: string | Buffer | object): string
+    sign(value: string | Buffer | object, expires: string): string
     decode(token: string): any
     verify(token: string): { value: string; iat: number; exp: number } | null
 }
@@ -12,9 +12,9 @@ export class JWTokenService implements IJWTokenService {
     private expiresIn: string
     private loggerService: SimpleLogger
 
-    sign(value: string | Buffer | object) {
+    sign(value: string | Buffer | object, expiresIn: string) {
         const token = jwt.sign({ value }, this.secret, {
-            expiresIn: this.expiresIn,
+            expiresIn,
         })
 
         return token
