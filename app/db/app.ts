@@ -55,7 +55,7 @@ export interface IDataBaseConnector {
     addUserRequirement(
         data: Omit<
             IRequirementStatsType,
-            'isExecuted' | 'id' | 'deleted' | 'userId'
+            'isExecuted' | 'id' | 'deleted' | 'userId' | 'executed'
         >,
         userId: string
     ): Promise<IRequirementStatsType | null>

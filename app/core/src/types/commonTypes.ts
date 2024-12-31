@@ -8,6 +8,8 @@ export interface IRequirementStatsType {
     userId: string
     title: string
     value: number
-    isExecuted: boolean
     deleted: boolean
+    executed: null | {
+        executedTimeStamp: number
+    }
 }

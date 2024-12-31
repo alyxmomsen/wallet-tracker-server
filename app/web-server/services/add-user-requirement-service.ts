@@ -60,7 +60,7 @@ export class AddUserRequirementService implements IAddUserRequirementService {
                             return {
                                 dateToExecute: requirement.getExecutionDate(),
                                 description: requirement.getDescription(),
-                                isExecuted: requirement.checkIfExecuted(),
+                                executed: requirement.isExecuted(),
                                 title: requirement.getTitle(),
                                 userId: requirement.getId(),
                                 value: requirement.getValue(),

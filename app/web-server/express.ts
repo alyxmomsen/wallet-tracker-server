@@ -54,7 +54,9 @@ webServerExpress.post('/update-user', async (req: Request, res: Response) => {
 
     // --------------------------
 
-    const updatedUser = await myApplication.replicateUser({ ...body, token })
+    const response = await myApplication.replicateUser({ ...body, token })
+
+    const updatedUser = response.payload
 
     if (updatedUser === null)
         return new Promise((resolve) => {
@@ -516,7 +518,7 @@ webServerExpress.post(
                                 requirement.getTransactionTypeCode(),
                             dateToExecute: requirement.getExecutionDate(),
                             description: requirement.getDescription(),
-                            isExecuted: requirement.checkIfExecuted(),
+                            executed: requirement.isExecuted(),
                             title: requirement.getTitle(),
                             userId: responsedPerson.getId(),
                             value: requirement.getValue(),

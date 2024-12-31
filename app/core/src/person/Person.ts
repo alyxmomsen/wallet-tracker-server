@@ -112,7 +112,7 @@ export abstract class Person implements IPerson {
     getActualRequirementCommands(): IRequirementCommand[] {
         return this.requirementTransactionCommandsPool.filter(
             (requirementCommand) => {
-                if (requirementCommand.checkIfExecuted()) {
+                if (requirementCommand.isExecuted()) {
                     return false
                 }
 
@@ -141,7 +141,7 @@ export abstract class Person implements IPerson {
 
     getExecutedRequirementCommands(): IRequirementCommand[] {
         return this.requirementTransactionCommandsPool.filter((elem) => {
-            return !elem.checkIfExecuted()
+            return !elem.isExecuted()
         })
     }
 

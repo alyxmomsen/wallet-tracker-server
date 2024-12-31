@@ -6,7 +6,9 @@ export interface IRequirementCommand {
     getValue(): number
     executeWithValue(value: number): number
     getExecutionDate(): number
-    checkIfExecuted(): boolean
+    isExecuted(): null | {
+        executedTimeStamp: number
+    }
     getTransactionTypeCode(): number
     getTitle(): string
     getId(): string
@@ -15,23 +17,15 @@ export interface IRequirementCommand {
     getCreatedTimeStamp(): number
 }
 
-export type TRequirementStats = {
-    title: string
-    value: number
-    description: string
-    dateTimeStamp: number
-    deleted: boolean
-    isExecuted: boolean
-    transactionTypeCode: number
-}
-
 abstract class RequirementCommand implements IRequirementCommand {
     protected id: string
     protected title: string
     protected value: number
     protected description: string
     protected date: number
-    protected isExecuted: boolean
+    protected executed: null | {
+        executedTimeStamp: number
+    }
     protected transactionTypeCode: number
     protected deleted: boolean
     protected updatedTimeStamp: number
@@ -65,8 +59,8 @@ abstract class RequirementCommand implements IRequirementCommand {
         return this.transactionTypeCode
     }
 
-    checkIfExecuted(): boolean {
-        return this.isExecuted
+    isExecuted(): null | { executedTimeStamp: number } {
+        return this.executed
     }
 
     getExecutionDate(): number {
@@ -88,13 +82,15 @@ abstract class RequirementCommand implements IRequirementCommand {
         description: string,
         date: number,
         transactionTypeCode: number,
-        isExecuted: boolean
+        executed: null | {
+            executedTimeStamp: number
+        }
     ) {
         this.id = id
         this.value = value
         this.description = description
         this.date = date
-        this.isExecuted = isExecuted
+        this.executed = executed
         this.title = title
         this.transactionTypeCode = transactionTypeCode
         this.deleted = false
@@ -105,13 +101,15 @@ abstract class RequirementCommand implements IRequirementCommand {
 
 export class IncrementMoneyRequirementCommand extends RequirementCommand {
     execute(person: IPerson): boolean {
-        if (this.isExecuted) {
+        if (this.executed) {
             return false
         }
 
         const balanceBefore = person.getWalletBalance()
         person.incrementWallet(this.value)
-        this.isExecuted = true
+        this.executed = {
+            executedTimeStamp: Date.now(),
+        }
 
         return true
     }
@@ -126,7 +124,7 @@ export class IncrementMoneyRequirementCommand extends RequirementCommand {
         title: string,
         description: string,
         date: number,
-        executed: boolean
+        executed: null | { executedTimeStamp: number }
     ) {
         super(id, value, title, description, date, 1, executed)
     }
@@ -146,13 +144,15 @@ export class DecrementMoneyRequirementCommand extends RequirementCommand {
     }
 
     execute(person: IPerson): boolean {
-        if (this.isExecuted) {
+        if (this.executed) {
             return false
         }
 
         const balanceBefore = person.getWalletBalance()
         person.decrementWallet(this.value)
-        this.isExecuted = true
+        this.executed = {
+            executedTimeStamp: Date.now(),
+        }
 
         return true
     }
@@ -163,7 +163,9 @@ export class DecrementMoneyRequirementCommand extends RequirementCommand {
         title: string,
         description: string,
         date: number,
-        executed: boolean
+        executed: null | {
+            executedTimeStamp: number
+        }
     ) {
         super(id, value, title, description, date, 0, executed)
     }

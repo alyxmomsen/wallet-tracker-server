@@ -6,11 +6,8 @@ import {
 import { IPersonFactory } from './factories/PersonFactory'
 import { IPerson, IUserStats, OrdinaryPerson } from './person/Person'
 
-import { ITask } from './Task'
+import { TResponseJSONData } from '../../web-server/express'
 
-import { TResponseJSONData, TUserData } from '../../web-server/express'
-
-import { IRequirementCommand } from './requirement-command/RequirementCommand'
 import {
     IRequirementCommandFactory,
     RequiremenCommandFactory,
@@ -35,7 +32,7 @@ export interface IApplicationFacade {
     addUserRequirement(
         requirementFields: Omit<
             IRequirementStatsType,
-            'isExecuted' | 'id' | 'deleted' | 'userId'
+            'id' | 'deleted' | 'userId' | 'executed'
         > & { authToken: string }
     ): Promise<TResponseJSONData<IPerson | null>>
     deleteUserRequirement(requirementId: string, token: string): Promise<any>
@@ -51,8 +48,6 @@ export interface IApplicationFacade {
         authToken: string
     } | null>
     getPersonByID(id: string): IPerson | null
-    addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>): void
-    update(): void
     getUserById(id: string): Promise<IPerson | null>
     getPersonStatsByIdAsync(id: string): Promise<{
         userData: Omit<IUserStats, 'password'> | null
@@ -62,7 +57,7 @@ export interface IApplicationFacade {
         }
     }>
     getPersonRequirementsAsync(id: string): IRequirementStatsType[]
-    getWalletsByUserIdIdAsync(id: string): Promise<TWalletData[]>
+    getWalletsByUserIdAsync(id: string): Promise<TWalletData[]>
     checkUserAuth(id: string): TAuthServiceCheckTokenResponse
     getUserWithAuthToken(token: string): Promise<{
         userStats: Omit<IUserStats, 'id' | 'password'>
@@ -70,13 +65,13 @@ export interface IApplicationFacade {
     } | null>
     replicateUser(
         newUserData: Omit<IUserStats, 'password' | 'id'> & { token: string }
-    ): Promise<IPerson | null>
+    ): Promise<TResponseJSONData<IPerson | null>>
 }
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
     async replicateUser(
         newUserData: Omit<IUserStats, 'password' | 'id'> & { token: string }
-    ): Promise<IPerson | null> {
+    ): Promise<TResponseJSONData<IPerson | null>> {
         const log = new SimpleLogger('replicate User').createLogger()
 
         console.log('>>> replicate user ::: data ::: ', newUserData)
@@ -88,7 +83,13 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         if (jwtVerifyResult === null) {
             log('token is expired , or any case')
 
-            return null
+            return {
+                payload: null,
+                status: {
+                    code: 402,
+                    details: 'token is expired',
+                },
+            }
         }
 
         log('get user by id...')
@@ -97,11 +98,16 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         if (theUser === null) {
             log('user by id is not exist')
 
-            return null
-        } // 204 No Content ;
+            return {
+                payload: null,
+                status: {
+                    code: 204,
+                    details: 'No Content',
+                },
+            }
+        }
 
         log('user is found')
-
         log('start iteration by requirements stats')
 
         newUserData.requirements.map((newRequirementStat) => {
@@ -139,7 +145,13 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         log('updated user data :::')
         console.log(theUser.getAllReauirementCommands())
-        return theUser
+        return {
+            payload: theUser,
+            status: {
+                code: 200,
+                details: 'OK',
+            },
+        }
     }
 
     async loginUser(
@@ -197,9 +209,10 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                             deleted: elem.getDeleted(),
                             description: elem.getDescription(),
                             id: elem.getId(),
-                            isExecuted: elem.checkIfExecuted(),
+                            executed: elem.isExecuted(),
                             title: elem.getTitle(),
                             value: elem.getValue(),
+                            // executed:elem
                         } as Omit<IRequirementStatsType, 'userId'>
                     }),
                 wallet: matchedUser.getWalletBalance(),
@@ -237,22 +250,21 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             return null
         }
 
-        const requirements: Omit<IRequirementStatsType, 'userId'>[] = (
-            await this.getPersonRequirementsAsync(userId)
-        ).map((elem) => {
-            return {
-                cashFlowDirectionCode: elem.cashFlowDirectionCode,
-                dateToExecute: elem.dateToExecute,
-                deleted: elem.deleted,
-                description: elem.description,
-                id: elem.id,
-                isExecuted: elem.isExecuted,
-                title: elem.title,
-                value: elem.value,
-                updatedTimeStamp: elem.updatedTimeStamp,
-                createdTimeStamp: elem.createdTimeStamp,
-            }
-        })
+        const requirements: Omit<IRequirementStatsType, 'userId'>[] =
+            this.getPersonRequirementsAsync(userId).map((elem) => {
+                return {
+                    cashFlowDirectionCode: elem.cashFlowDirectionCode,
+                    dateToExecute: elem.dateToExecute,
+                    deleted: elem.deleted,
+                    description: elem.description,
+                    id: elem.id,
+                    executed: elem.executed,
+                    title: elem.title,
+                    value: elem.value,
+                    updatedTimeStamp: elem.updatedTimeStamp,
+                    createdTimeStamp: elem.createdTimeStamp,
+                }
+            })
 
         const userData: Omit<IUserStats, 'id' | 'password'> = {
             name: user.getUserName(),
@@ -269,48 +281,14 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         requirementId: string,
         token: string
     ): Promise<any> {
-        const sl = new SimpleLogger('delete user reqs')
-        const log = sl.createLogger()
+        const log = new SimpleLogger(
+            'APP::DELETE USER REQUIREMENTS'
+        ).createLogger()
+        log('method started')
 
-        log(`METHOD deleteUserRequirement STARTED`)
-        log(`arguments: ${requirementId} , ${token}`)
+        /* any code */
 
-        const jwrVerifyResult = this.jsonWebTokenService.verify(token)
-
-        if (jwrVerifyResult === null) {
-            log(`token failed`)
-
-            return
-        }
-
-        log(`token is successfully`)
-
-        const { value: userId } = jwrVerifyResult
-
-        const userById = this.usersPoolStorage.getUserById(userId)
-
-        if (userById === null) {
-            log('user not exist in the users pool')
-
-            return
-        }
-
-        log('checking requirements...')
-        const requirementsToDelete = userById
-            .getAllReauirementCommands()
-            .filter((elem) => {})
-
-        if (requirementsToDelete.length > 1) {
-            log('MULTIPLE requirements by this ID')
-
-            return
-        }
-
-        if (requirementsToDelete.length === 0) {
-            log('no requirements like this ID')
-        }
-
-        log('METHOD deleteUserRequirement END')
+        log('method is finished')
     }
 
     static Instance(
@@ -340,7 +318,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     async addUserRequirement(
         requirementFields: Omit<
             IRequirementStatsType,
-            'isExecuted' | 'id' | 'deleted' | 'userId'
+            'isExecuted' | 'id' | 'deleted' | 'userId' | 'executed'
         > & { authToken: string }
     ): Promise<TResponseJSONData<IPerson | null>> {
         console.log(`>>> check if user pool contain user by this ID`)
@@ -446,7 +424,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return response
     }
 
-    async getWalletsByUserIdIdAsync(id: string): Promise<TWalletData[]> {
+    async getWalletsByUserIdAsync(id: string): Promise<TWalletData[]> {
         const wallet = await this.dataBaseConnector.getPersonWalletByUserId(id)
 
         return wallet
@@ -464,7 +442,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             .map((requirement) => {
                 const dateToExecute = requirement.getExecutionDate()
                 const description = requirement.getDescription()
-                const isExecuted = requirement.checkIfExecuted()
+                const executed = requirement.isExecuted()
                 const title = requirement.getTitle()
                 const cashFlowDirectionCode =
                     requirement.getTransactionTypeCode()
@@ -479,7 +457,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                     title,
                     value,
                     userId: userById.getId(),
-                    isExecuted,
+                    executed,
                     deleted: false,
                     createdTimeStamp: requirement.getCreatedTimeStamp(),
                     updatedTimeStamp: requirement.getUpdatedTimeStamp(),
@@ -488,8 +466,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         return requirements
     }
-
-    addRequirementSchedule(task: ITask<IRequirementCommand, IPerson>) {}
 
     async addUserAsync(
         username: string,
@@ -569,7 +545,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                         dateToExecute: elem.getExecutionDate(),
                         description: elem.getDescription(),
                         id: elem.getId(),
-                        isExecuted: elem.checkIfExecuted(),
+                        executed: elem.isExecuted(),
                         title: elem.getTitle(),
                         updatedTimeStamp: elem.getUpdatedTimeStamp(),
                         value: elem.getValue(),
@@ -588,9 +564,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             },
         }
     }
-
-    update() {}
-
     // private usersPool: IPerson[]
     private static instance: ApplicationSingletoneFacade | null = null
     private dataBaseConnector: IDataBaseConnector
