@@ -3,7 +3,7 @@ export interface IRequirementStatsType {
     updatedTimeStamp: number
     dateToExecute: number
     description: string
-    cashFlowDirectionCode: number
+    transactionTypeCode: number
     id: string
     userId: string
     title: string

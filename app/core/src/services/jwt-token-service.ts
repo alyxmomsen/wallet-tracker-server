@@ -62,6 +62,6 @@ export class JWTokenService implements IJWTokenService {
     constructor() {
         this.secret = 'foobar'
         this.expiresIn = '120s'
-        this.loggerService = new SimpleLogger('JWT service')
+        this.loggerService = new SimpleLogger('JWT service', false)
     }
 }

@@ -55,7 +55,7 @@ export interface IDataBaseConnector {
     addUserRequirement(
         data: Omit<
             IRequirementStatsType,
-            'isExecuted' | 'id' | 'deleted' | 'userId' | 'executed'
+            'id' | 'deleted' | 'userId' | 'executed'
         >,
         userId: string
     ): Promise<IRequirementStatsType | null>
@@ -124,21 +124,24 @@ export class FirebaseConnector implements IDataBaseConnector {
     async updateUserTransactions(data: IRequirementStatsType[]) {}
 
     async addUserRequirement(
-        fields: Omit<
-            IRequirementStatsType,
-            'isExecuted' | 'id' | 'deleted' | 'userId'
-        >,
+        fields: Omit<IRequirementStatsType, 'id' | 'deleted' | 'userId'>,
         userId: string
     ): Promise<IRequirementStatsType | null> {
-        console.log('>>> try to add insert the requrement into DB')
+        const log = new SimpleLogger('FIREBASE CONNECTOR').createLogger()
+
+        log('started')
 
         const newRequirementFields = await addUserRequirementIntoFireStore(
             { ...fields, deleted: false },
             userId
         )
 
-        console.log(`>>> result: `, newRequirementFields)
+        if (newRequirementFields === null) {
+            log('add user requirent into firestor function ::: FAIL')
+            return newRequirementFields
+        }
 
+        log('add user requirent into firestor function ::: SUCCESS')
         return newRequirementFields
     }
     async getPersonWalletByUserId(id: string): Promise<TWalletData[]> {
@@ -363,7 +366,8 @@ async function addUserRequirementIntoFireStore(
     userId: string
 ): Promise<IRequirementStatsType | null> {
     const log = new SimpleLogger(
-        'add user into firestore function'
+        'add user into firestore function',
+        false
     ).createLogger()
 
     log('function start')

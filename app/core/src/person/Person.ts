@@ -45,9 +45,40 @@ export interface IPerson {
     getCreatedTimeStamp(): number
     getUpdatedTimeStamp(): number
     setWalletValue(value: number): boolean
+    getStats(): Omit<IUserStats, 'password'>
 }
 
 export abstract class Person implements IPerson {
+    getStats(): Omit<IUserStats, 'password'> {
+        const userStats: Omit<IUserStats, 'password'> = {
+            createdTimeStamp: this.getCreatedTimeStamp(),
+            id: this.getId(),
+            name: this.getUserName(),
+            requirements:
+                this.getAllReauirementCommands().map<IRequirementStatsType>(
+                    (elem) => {
+                        return {
+                            transactionTypeCode: elem.getTransactionTypeCode(),
+                            createdTimeStamp: elem.getCreatedTimeStamp(),
+                            dateToExecute: elem.getDateToExecute(),
+                            deleted: elem.getDeleted(),
+                            description: elem.getDescription(),
+                            executed: elem.isExecuted(),
+                            id: elem.getId(),
+                            title: elem.getTitle(),
+                            updatedTimeStamp: elem.getUpdatedTimeStamp(),
+                            value: elem.getValue(),
+                            userId: this.getId(),
+                        }
+                    }
+                ),
+            updatedTimeStamp: this.getUpdatedTimeStamp(),
+            wallet: this.getWalletBalance(),
+        }
+
+        return userStats
+    }
+
     setWalletValue(value: number): boolean {
         this.wallet.updateBalance(value)
         return true
@@ -78,7 +109,7 @@ export abstract class Person implements IPerson {
                 value,
                 valueBefore,
                 valueAfter,
-                executionDate: requirement.getExecutionDate(),
+                executionDate: requirement.getDateToExecute(),
                 transactionTypeCode: requirement.getTransactionTypeCode(),
             }
         })
@@ -119,7 +150,7 @@ export abstract class Person implements IPerson {
                 const currDateObj = getDateUtil(new Date())
 
                 const requirementDateObj = getDateUtil(
-                    new Date(requirementCommand.getExecutionDate())
+                    new Date(requirementCommand.getDateToExecute())
                 )
 
                 if (

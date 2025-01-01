@@ -12,29 +12,15 @@ export interface IRequirementCommandFactory {
 }
 
 export class RequiremenCommandFactory implements IRequirementCommandFactory {
-    create(
-        fields: Omit<IRequirementStatsType, 'userId'>
-    ): IRequirementCommand | null {
-        switch (fields.cashFlowDirectionCode) {
+    create(fields: IRequirementStatsType): IRequirementCommand | null {
+        switch (fields.transactionTypeCode) {
             case 0:
-                return new IncrementMoneyRequirementCommand(
-                    fields.id,
-                    fields.value,
-                    fields.title,
-                    fields.description,
-                    fields.dateToExecute,
-                    fields.executed
-                )
+                return new IncrementMoneyRequirementCommand(fields)
             case 1:
-                return new DecrementMoneyRequirementCommand(
-                    fields.id,
-                    fields.value,
-                    fields.title,
-                    fields.description,
-                    fields.dateToExecute,
-                    fields.executed
-                )
+                return new DecrementMoneyRequirementCommand(fields)
             default:
+                console.log('GOTCHA')
+                console.log('>>> filds >>> ::: ', fields)
                 return null
         }
     }

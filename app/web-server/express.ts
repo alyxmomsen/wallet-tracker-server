@@ -33,9 +33,6 @@ webServerExpress.post('/update-user', async (req: Request, res: Response) => {
     const token = req.headers['x-auth']
     const body = req.body as Omit<IUserStats, 'password'>
 
-    console.log('>>> update user :: token: ', { token })
-    console.log('>>> update user :: body: ', { body })
-
     // validate req data and headers
 
     if (typeof token !== 'string') {
@@ -75,12 +72,6 @@ webServerExpress.post('/update-user', async (req: Request, res: Response) => {
         updatedUser.getId()
     )
 
-    console.log(
-        '>>> express matcher >>> updated user : ',
-        updatedUser?.getAllReauirementCommands(),
-        userStats
-    )
-
     if (userStats.userData === null)
         return new Promise((resolve) => {
             res.status(501).json({
@@ -110,7 +101,10 @@ webServerExpress.post('/update-user', async (req: Request, res: Response) => {
 webServerExpress.post(
     '/delete-requirement-protected-ep',
     async (req: Request, res: Response) => {
-        const log = new SimpleLogger('delete requirement route').createLogger()
+        const log = new SimpleLogger(
+            'delete requirement route',
+            false
+        ).createLogger()
 
         log('Route /delete-requirement-protected-ep')
 
@@ -444,6 +438,10 @@ webServerExpress.post('/registration', async (req: Request, res: Response) => {
 webServerExpress.post(
     '/add-user-requirements-protected',
     async (req: Request, res: Response) => {
+        const log = new SimpleLogger(
+            'ADD USER REQUIREMENT MATCHER'
+        ).createLogger()
+        log('matcher start...')
         // const addRequirementService: IAddUserRequirementService =
         //     new AddUserRequirementService()
 
@@ -452,6 +450,7 @@ webServerExpress.post(
         const body = req.body
 
         if (body === undefined) {
+            log('body ::: Fail')
             return new Promise((resolve) => {
                 res.status(200).json({
                     payload: null,
@@ -464,11 +463,13 @@ webServerExpress.post(
             })
         }
 
+        log('body ::: OK')
         // check headers the x-auth
 
         const xAuth = req.headers['x-auth']
 
         if (typeof xAuth !== 'string') {
+            log('xAuth type ::: Fail')
             return new Promise((resolve) => {
                 res.status(500).json({
                     payload: null,
@@ -481,15 +482,17 @@ webServerExpress.post(
             })
         }
 
-        console.log('>>> add user requirement :: ', xAuth, body)
+        log('xAuth type ::: OK')
 
         try {
+            log('Adding user requirement...')
             const response = await myApplication.addUserRequirement({
                 ...body,
                 authToken: xAuth,
             })
 
             if (response.payload === null) {
+                log('adding user requiremtn ::: FAIL')
                 return new Promise((resolve) => {
                     res.status(response.status.code).json({
                         payload: null,
@@ -504,38 +507,9 @@ webServerExpress.post(
 
             const responsedPerson: IPerson = response.payload
 
-            console.log(
-                '>>> add user requirement :: responsedPerson :: ',
-                responsedPerson
-            )
-
-            const requirementsAsStats: Omit<IRequirementStatsType, 'userId'>[] =
-                responsedPerson
-                    .getAllReauirementCommands()
-                    .map((requirement) => {
-                        return {
-                            cashFlowDirectionCode:
-                                requirement.getTransactionTypeCode(),
-                            dateToExecute: requirement.getExecutionDate(),
-                            description: requirement.getDescription(),
-                            executed: requirement.isExecuted(),
-                            title: requirement.getTitle(),
-                            userId: responsedPerson.getId(),
-                            value: requirement.getValue(),
-                            id: requirement.getId(),
-                            deleted: requirement.getDeleted(),
-                            updatedTimeStamp: requirement.getUpdatedTimeStamp(),
-                            createdTimeStamp: requirement.getCreatedTimeStamp(),
-                        }
-                    })
-
             return new Promise((resolve) => {
                 res.status(200).json({
-                    payload: {
-                        name: responsedPerson.getUserName(),
-                        wallet: responsedPerson.getWalletBalance(),
-                        requirements: requirementsAsStats,
-                    },
+                    payload: responsedPerson.getStats(),
                     status: {
                         code: 0,
                         details: 'updated user data',
@@ -544,7 +518,8 @@ webServerExpress.post(
                 resolve()
             })
         } catch (error) {
-            console.log({ error })
+            log('adding user requirement ERROR')
+
             return new Promise((resolve) => {
                 res.status(500).json({
                     payload: null,
@@ -561,9 +536,7 @@ webServerExpress.post(
 
 const port: number = 3030
 
-webServerExpress.listen(port, () => {
-    console.log('web server is running on port: ' + port + '. WELCOME!')
-})
+webServerExpress.listen(port, () => {})
 
 // webServerExpress.
 

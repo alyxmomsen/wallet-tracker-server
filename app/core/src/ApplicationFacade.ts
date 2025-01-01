@@ -56,7 +56,7 @@ export interface IApplicationFacade {
             description: string
         }
     }>
-    getPersonRequirementsAsync(id: string): IRequirementStatsType[]
+    // getPersonRequirementsAsync(id: string): IRequirementStatsType[]
     getWalletsByUserIdAsync(id: string): Promise<TWalletData[]>
     checkUserAuth(id: string): TAuthServiceCheckTokenResponse
     getUserWithAuthToken(token: string): Promise<{
@@ -70,14 +70,12 @@ export interface IApplicationFacade {
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
     async replicateUser(
-        newUserData: Omit<IUserStats, 'password' | 'id'> & { token: string }
+        newUserStats: Omit<IUserStats, 'password' | 'id'> & { token: string }
     ): Promise<TResponseJSONData<IPerson | null>> {
-        const log = new SimpleLogger('replicate User').createLogger()
-
-        console.log('>>> replicate user ::: data ::: ', newUserData)
+        const log = new SimpleLogger('replicate User', false).createLogger()
 
         const jwtVerifyResult = this.jsonWebTokenService.verify(
-            newUserData.token
+            newUserStats.token
         )
 
         if (jwtVerifyResult === null) {
@@ -110,9 +108,9 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         log('user is found')
         log('start iteration by requirements stats')
 
-        newUserData.requirements.map((newRequirementStat) => {
+        newUserStats.requirements.map((newRequirementStat) => {
             // log('iteration');
-            // console.log(newRequirementStat.isExecuted);
+
             const newRequirementStatId = newRequirementStat.id
 
             theUser
@@ -124,6 +122,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
                         const updatedRequirement = requirementFactory.create({
                             ...newRequirementStat,
+                            userId: theUser.getId(),
                         })
 
                         console.log(
@@ -135,16 +134,16 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                         if (updatedRequirement === null) return null // 500 Internal Server Error
 
                         log('set update requirement')
-                        console.log(arr === theUser.getAllReauirementCommands())
+
                         arr[i] = updatedRequirement
                     }
                 })
         })
 
-        theUser.setWalletValue(newUserData.wallet)
+        theUser.setWalletValue(newUserStats.wallet)
 
         log('updated user data :::')
-        console.log(theUser.getAllReauirementCommands())
+
         return {
             payload: theUser,
             status: {
@@ -161,12 +160,10 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         userStats: Omit<IUserStats, 'id' | 'password'>
         authToken: string
     } | null> {
-        const log = new SimpleLogger('login user').createLogger()
+        const log = new SimpleLogger('login user', false).createLogger()
 
         const dataBaseResponse: TDatabaseResultStatus<Pick<IUserStats, 'id'>> =
             await this.dataBaseConnector.getPersonByFields(userName, password)
-
-        console.log('>>> data base response :: ', dataBaseResponse)
 
         /* -------------------------- */
 
@@ -203,9 +200,8 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                     .getAllReauirementCommands()
                     .map((elem) => {
                         return {
-                            cashFlowDirectionCode:
-                                elem.getTransactionTypeCode(),
-                            dateToExecute: elem.getExecutionDate(),
+                            transactionTypeCode: elem.getTransactionTypeCode(),
+                            dateToExecute: elem.getDateToExecute(),
                             deleted: elem.getDeleted(),
                             description: elem.getDescription(),
                             id: elem.getId(),
@@ -224,7 +220,10 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         userStats: Omit<IUserStats, 'id' | 'password'>
         authToken: string
     } | null> {
-        const log = new SimpleLogger('Get user with authToken').createLogger()
+        const log = new SimpleLogger(
+            'Get user with authToken',
+            false
+        ).createLogger()
 
         // the authenticity of the token
         log('start')
@@ -232,8 +231,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         const response = this.jsonWebTokenService.verify(token)
 
         log('response', { response })
-
-        // console.log();
 
         // if token FAIL
         if (response === null) {
@@ -250,31 +247,9 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             return null
         }
 
-        const requirements: Omit<IRequirementStatsType, 'userId'>[] =
-            this.getPersonRequirementsAsync(userId).map((elem) => {
-                return {
-                    cashFlowDirectionCode: elem.cashFlowDirectionCode,
-                    dateToExecute: elem.dateToExecute,
-                    deleted: elem.deleted,
-                    description: elem.description,
-                    id: elem.id,
-                    executed: elem.executed,
-                    title: elem.title,
-                    value: elem.value,
-                    updatedTimeStamp: elem.updatedTimeStamp,
-                    createdTimeStamp: elem.createdTimeStamp,
-                }
-            })
+        const userStats: Omit<IUserStats, 'id' | 'password'> = user.getStats()
 
-        const userData: Omit<IUserStats, 'id' | 'password'> = {
-            name: user.getUserName(),
-            wallet: user.getWalletBalance(),
-            requirements,
-            createdTimeStamp: user.getCreatedTimeStamp(),
-            updatedTimeStamp: user.getUpdatedTimeStamp(),
-        }
-
-        return { userStats: userData, authToken: token }
+        return { userStats, authToken: token }
     }
 
     async deleteUserRequirement(
@@ -282,7 +257,8 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         token: string
     ): Promise<any> {
         const log = new SimpleLogger(
-            'APP::DELETE USER REQUIREMENTS'
+            'APP::DELETE USER REQUIREMENTS',
+            false
         ).createLogger()
         log('method started')
 
@@ -318,15 +294,24 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     async addUserRequirement(
         requirementFields: Omit<
             IRequirementStatsType,
-            'isExecuted' | 'id' | 'deleted' | 'userId' | 'executed'
+            'id' | 'deleted' | 'userId' | 'executed'
         > & { authToken: string }
     ): Promise<TResponseJSONData<IPerson | null>> {
-        console.log(`>>> check if user pool contain user by this ID`)
+        const log = new SimpleLogger('APP::ADD USER REQUIREMENT').createLogger()
+
+        log('starting ...')
+
+        console.log(
+            '>>> APP::ADD USER REQUIREMENT >>> incoming stats : ',
+            requirementFields
+        )
+
         const response = this.jsonWebTokenService.verify(
             requirementFields.authToken
         )
 
         if (response === null) {
+            log('JWT TOKEN FAIL')
             return {
                 status: {
                     code: 401,
@@ -336,12 +321,14 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             }
         }
 
+        log('jwt token SUCCESS')
+
         const { value: userId } = response
 
         const user = await this.getUserById(userId)
 
         if (user === null) {
-            console.log(`>>> user is not exist or something wrong`)
+            log('user by id is FAIL')
 
             return {
                 payload: null,
@@ -352,15 +339,11 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             }
         }
 
-        console.log(`>>> user is exist`)
+        log('user by id is SUCCESS')
 
         // если юзер существует,
         // то нужно добавить реквайермент в дата бейс,
         //  что бы получить requirement ID
-
-        console.log(
-            `>>> try to add user-requirement into DB and get requirement Id...`
-        )
 
         const newReqFields = await this.dataBaseConnector.addUserRequirement(
             { ...requirementFields },
@@ -368,7 +351,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         )
 
         if (newReqFields === null) {
-            console.log(`>>> try to add requirement into data base  is FAILED`)
+            log('databaseConnector::add user requirement ::: FAIL')
 
             return {
                 status: {
@@ -379,16 +362,17 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             }
         }
 
-        console.log(`>>> requirement added into Data Base , SUCCESSFULLY`)
+        log('databaseConnector::add user requirement ::: SUCCESS')
 
         const reqquirementfactory = new RequiremenCommandFactory()
 
-        console.log(`>>> trying to make requirement...`)
-
         const requirement = reqquirementfactory.create({ ...newReqFields })
 
+        console.log('>>> new requirement stats :::: ', newReqFields)
+
         if (requirement === null) {
-            console.log(`>>> requirement is NOT CREATED !!!`)
+            log('Requirement factory ::: FAIL')
+
             return {
                 status: {
                     code: 500,
@@ -398,14 +382,9 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             }
         }
 
-        console.log(`>>> requirement is CREATED`)
+        log('Requirement factory ::: SUCCESS')
+
         user.addRequirementCommand(requirement)
-        console.log(
-            `>>> user requirement inserted into the user: `,
-            user.getId(),
-            requirement.getId()
-        )
-        console.log(`>>> user object were trying mutating`)
 
         return {
             status: {
@@ -430,42 +409,42 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return wallet
     }
 
-    getPersonRequirementsAsync(id: string): IRequirementStatsType[] {
-        const userById = this.usersPoolStorage.getUserById(id)
+    // getPersonRequirementsAsync(id: string): IRequirementStatsType[] {
+    //     const userById = this.usersPoolStorage.getUserById(id)
 
-        if (userById === null) {
-            return []
-        }
+    //     if (userById === null) {
+    //         return []
+    //     }
 
-        const requirements: IRequirementStatsType[] = userById
-            .getAllReauirementCommands()
-            .map((requirement) => {
-                const dateToExecute = requirement.getExecutionDate()
-                const description = requirement.getDescription()
-                const executed = requirement.isExecuted()
-                const title = requirement.getTitle()
-                const cashFlowDirectionCode =
-                    requirement.getTransactionTypeCode()
-                const value = requirement.getValue()
-                const id = requirement.getId()
+    //     const requirements: IRequirementStatsType[] = userById.getStats().requirements;
+    //         // .getAllReauirementCommands()
+    //         // .map((requirement) => {
+    //         //     const dateToExecute = requirement.getDateToExecute()
+    //         //     const description = requirement.getDescription()
+    //         //     const executed = requirement.isExecuted()
+    //         //     const title = requirement.getTitle()
+    //         //     const cashFlowDirectionCode =
+    //         //         requirement.getTransactionTypeCode()
+    //         //     const value = requirement.getValue()
+    //         //     const id = requirement.getId()
 
-                return {
-                    dateToExecute,
-                    description,
-                    cashFlowDirectionCode,
-                    id,
-                    title,
-                    value,
-                    userId: userById.getId(),
-                    executed,
-                    deleted: false,
-                    createdTimeStamp: requirement.getCreatedTimeStamp(),
-                    updatedTimeStamp: requirement.getUpdatedTimeStamp(),
-                }
-            })
+    //         //     return {
+    //         //         dateToExecute,
+    //         //         description,
+    //         //         cashFlowDirectionCode,
+    //         //         id,
+    //         //         title,
+    //         //         value,
+    //         //         userId: userById.getId(),
+    //         //         executed,
+    //         //         deleted: false,
+    //         //         createdTimeStamp: requirement.getCreatedTimeStamp(),
+    //         //         updatedTimeStamp: requirement.getUpdatedTimeStamp(),
+    //         //     }
+    //         // })
 
-        return requirements
-    }
+    //     return requirements
+    // }
 
     async addUserAsync(
         username: string,
@@ -540,9 +519,9 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                 .getAllReauirementCommands()
                 .map<Omit<IRequirementStatsType, 'userId'>>((elem) => {
                     return {
-                        cashFlowDirectionCode: elem.getTransactionTypeCode(),
+                        transactionTypeCode: elem.getTransactionTypeCode(),
                         createdTimeStamp: elem.getCreatedTimeStamp(),
-                        dateToExecute: elem.getExecutionDate(),
+                        dateToExecute: elem.getDateToExecute(),
                         description: elem.getDescription(),
                         id: elem.getId(),
                         executed: elem.isExecuted(),
@@ -662,6 +641,10 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                                                         newUser.addRequirementCommand(
                                                             requirement
                                                         )
+                                                    } else {
+                                                        console.log(
+                                                            '>>> APP::CONSTRUCTOR >>> requirement creating is FAIL'
+                                                        )
                                                     }
                                                 }
                                             )
@@ -689,7 +672,8 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                 })
 
                 const log = new SimpleLogger(
-                    'users pool storage'
+                    'users pool storage',
+                    false
                 ).createLogger()
 
                 resolves.forEach((item) => {
@@ -715,7 +699,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         // const port = 3030
         // this.webServer.listen(port, () => {
-        //     console.log(`Сервер запущен на http://localhost:${port}`)
+
         // })
     }
 }

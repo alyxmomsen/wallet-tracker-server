@@ -1,11 +1,12 @@
 import { IPerson } from '../person/Person'
+import { IRequirementStatsType } from '../types/commonTypes'
 
 export interface IRequirementCommand {
     execute(person: IPerson): boolean
     getDescription(): string
     getValue(): number
     executeWithValue(value: number): number
-    getExecutionDate(): number
+    getDateToExecute(): number
     isExecuted(): null | {
         executedTimeStamp: number
     }
@@ -22,7 +23,7 @@ abstract class RequirementCommand implements IRequirementCommand {
     protected title: string
     protected value: number
     protected description: string
-    protected date: number
+    protected dateToExecute: number
     protected executed: null | {
         executedTimeStamp: number
     }
@@ -63,8 +64,8 @@ abstract class RequirementCommand implements IRequirementCommand {
         return this.executed
     }
 
-    getExecutionDate(): number {
-        return this.date
+    getDateToExecute(): number {
+        return this.dateToExecute
     }
 
     getDescription(): string {
@@ -75,24 +76,14 @@ abstract class RequirementCommand implements IRequirementCommand {
         return this.value
     }
 
-    constructor(
-        id: string,
-        value: number,
-        title: string,
-        description: string,
-        date: number,
-        transactionTypeCode: number,
-        executed: null | {
-            executedTimeStamp: number
-        }
-    ) {
-        this.id = id
-        this.value = value
-        this.description = description
-        this.date = date
-        this.executed = executed
-        this.title = title
-        this.transactionTypeCode = transactionTypeCode
+    constructor(stats: IRequirementStatsType) {
+        this.id = stats.id
+        this.value = stats.value
+        this.description = stats.description
+        ;(this.dateToExecute = stats.dateToExecute),
+            (this.executed = stats.executed)
+        this.title = stats.title
+        this.transactionTypeCode = stats.transactionTypeCode
         this.deleted = false
         this.createdTimeStamp = Date.now()
         this.updatedTimeStamp = Date.now()
@@ -118,15 +109,8 @@ export class IncrementMoneyRequirementCommand extends RequirementCommand {
         return value + this.value
     }
 
-    constructor(
-        id: string,
-        value: number,
-        title: string,
-        description: string,
-        date: number,
-        executed: null | { executedTimeStamp: number }
-    ) {
-        super(id, value, title, description, date, 1, executed)
+    constructor(stats: IRequirementStatsType) {
+        super(stats)
     }
 }
 
@@ -157,16 +141,7 @@ export class DecrementMoneyRequirementCommand extends RequirementCommand {
         return true
     }
 
-    constructor(
-        id: string,
-        value: number,
-        title: string,
-        description: string,
-        date: number,
-        executed: null | {
-            executedTimeStamp: number
-        }
-    ) {
-        super(id, value, title, description, date, 0, executed)
+    constructor(initStats: IRequirementStatsType) {
+        super(initStats)
     }
 }
