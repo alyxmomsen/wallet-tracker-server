@@ -77,14 +77,16 @@ abstract class RequirementCommand implements IRequirementCommand {
     }
 
     constructor(stats: IRequirementStatsType) {
+        console.log('>>> requirement >>> constructor ::: params : ', stats)
+
         this.id = stats.id
         this.value = stats.value
         this.description = stats.description
         ;(this.dateToExecute = stats.dateToExecute),
-            (this.executed = stats.executed)
-        this.title = stats.title
-        this.transactionTypeCode = stats.transactionTypeCode
-        this.deleted = false
+            (this.executed = stats.executed),
+            (this.title = stats.title),
+            (this.transactionTypeCode = stats.transactionTypeCode),
+            (this.deleted = false)
         this.createdTimeStamp = Date.now()
         this.updatedTimeStamp = Date.now()
     }

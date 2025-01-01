@@ -33,9 +33,15 @@ webServerExpress.post('/update-user', async (req: Request, res: Response) => {
     const token = req.headers['x-auth']
     const body = req.body as Omit<IUserStats, 'password'>
 
+    const log = new SimpleLogger('UPDATE USER MATCHER').createLogger()
+
+    log('matcher started')
+
     // validate req data and headers
 
     if (typeof token !== 'string') {
+        log('token type ::: FALSE')
+
         return new Promise((resolve) => {
             res.status(403).json({
                 payload: null,
@@ -49,13 +55,22 @@ webServerExpress.post('/update-user', async (req: Request, res: Response) => {
         })
     }
 
+    log('token type ::: OK')
+
     // --------------------------
+
+    log('starting APP::REPLICATEUSER...')
 
     const response = await myApplication.replicateUser({ ...body, token })
 
+    log('APP::REPLICATEUSER response :')
+    console.log(response.payload?.getAllReauirementCommands())
+
     const updatedUser = response.payload
 
-    if (updatedUser === null)
+    if (updatedUser === null) {
+        log('APP::REPLICATEUSER response ::: FAIL')
+
         return new Promise((resolve) => {
             res.status(501).json({
                 payload: null,
@@ -67,6 +82,7 @@ webServerExpress.post('/update-user', async (req: Request, res: Response) => {
 
             resolve()
         })
+    }
 
     const userStats = await myApplication.getPersonStatsByIdAsync(
         updatedUser.getId()

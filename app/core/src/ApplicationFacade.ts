@@ -74,6 +74,8 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     ): Promise<TResponseJSONData<IPerson | null>> {
         const log = new SimpleLogger('replicate User', false).createLogger()
 
+        console.log('>>> app::replicateuser : params:', newUserStats)
+
         const jwtVerifyResult = this.jsonWebTokenService.verify(
             newUserStats.token
         )
@@ -108,26 +110,26 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         log('user is found')
         log('start iteration by requirements stats')
 
-        newUserStats.requirements.map((newRequirementStat) => {
+        newUserStats.requirements.map((newRequirementStats) => {
             // log('iteration');
 
-            const newRequirementStatId = newRequirementStat.id
+            const newRequirementStatsId = newRequirementStats.id
 
             theUser
                 .getAllReauirementCommands()
                 .forEach((requirement, i, arr) => {
-                    if (requirement.getId() === newRequirementStatId) {
+                    if (requirement.getId() === newRequirementStatsId) {
                         const requirementFactory =
                             new RequiremenCommandFactory()
 
                         const updatedRequirement = requirementFactory.create({
-                            ...newRequirementStat,
+                            ...newRequirementStats,
                             userId: theUser.getId(),
                         })
 
                         console.log(
                             '>>> updated requirement :::',
-                            newRequirementStat,
+                            newRequirementStats,
                             updatedRequirement
                         )
 
@@ -290,7 +292,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return userById
     }
 
-    // code:2 - not found , 1 - unautorized user , 0 - ok
     async addUserRequirement(
         requirementFields: Omit<
             IRequirementStatsType,
@@ -345,10 +346,10 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         // то нужно добавить реквайермент в дата бейс,
         //  что бы получить requirement ID
 
-        const newReqFields = await this.dataBaseConnector.addUserRequirement(
-            { ...requirementFields },
-            userId
-        )
+        const newReqFields = await this.dataBaseConnector.addUserRequirement({
+            ...requirementFields,
+            userId,
+        })
 
         if (newReqFields === null) {
             log('databaseConnector::add user requirement ::: FAIL')

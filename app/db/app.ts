@@ -53,11 +53,7 @@ export type TDatabaseResultStatus<T> = {
 
 export interface IDataBaseConnector {
     addUserRequirement(
-        data: Omit<
-            IRequirementStatsType,
-            'id' | 'deleted' | 'userId' | 'executed'
-        >,
-        userId: string
+        data: Omit<IRequirementStatsType, 'id' | 'deleted' | 'executed'>
     ): Promise<IRequirementStatsType | null>
     getPersonByFields(
         username: string,
@@ -124,16 +120,15 @@ export class FirebaseConnector implements IDataBaseConnector {
     async updateUserTransactions(data: IRequirementStatsType[]) {}
 
     async addUserRequirement(
-        fields: Omit<IRequirementStatsType, 'id' | 'deleted' | 'userId'>,
-        userId: string
+        data: Omit<IRequirementStatsType, 'id' | 'deleted'>
     ): Promise<IRequirementStatsType | null> {
         const log = new SimpleLogger('FIREBASE CONNECTOR').createLogger()
 
         log('started')
 
         const newRequirementFields = await addUserRequirementIntoFireStore(
-            { ...fields, deleted: false },
-            userId
+            { ...data, deleted: false },
+            data.userId
         )
 
         if (newRequirementFields === null) {
@@ -378,9 +373,28 @@ async function addUserRequirementIntoFireStore(
         log(prop)
     }
 
+    const {
+        createdTimeStamp,
+        dateToExecute,
+        deleted,
+        description,
+        executed,
+        title,
+        transactionTypeCode,
+        updatedTimeStamp,
+        value,
+    } = fields
+
     const docRef = await addDoc(collection(db, 'requirements'), {
-        ...fields,
-        userId,
+        createdTimeStamp: Date.now(),
+        dateToExecute,
+        deleted: false,
+        description,
+        executed: false,
+        title,
+        transactionTypeCode,
+        updatedTimeStamp: Date.now(),
+        value,
     })
 
     const docSnap = await getDoc(docRef)
