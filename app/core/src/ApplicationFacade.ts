@@ -6,7 +6,7 @@ import {
 import { IPersonFactory } from './factories/PersonFactory'
 import { IPerson, IUserStats, OrdinaryPerson } from './person/Person'
 
-import { ISimpleResponse } from '../../web-server/express'
+import { IOrginaryResponse } from '../../web-server/express'
 
 import {
     IRequirementCommandFactory,
@@ -30,13 +30,22 @@ import {
 
 export interface INewUserStats extends Omit<IUserStats, 'password' | 'id'> { token: string };
 
+
+interface IGetPersonStatsResponse {
+        userData: Omit<IUserStats, 'password'> | null
+        details: {
+            code: number
+            description: string
+        }
+    }
+
 export interface IApplicationFacade {
     addUserRequirement(
         requirementFields: Omit<
             IRequirementStatsType,
             'id' | 'deleted' | 'userId' | 'executed'
         > & { authToken: string }
-    ): Promise<ISimpleResponse<IPerson | null>>
+    ): Promise<IOrginaryResponse<IPerson | null>>
     deleteUserRequirement(requirementId: string, token: string): Promise<any>
     addUserAsync(
         username: string,
@@ -45,7 +54,7 @@ export interface IApplicationFacade {
     loginUser(
         userName: string,
         password: string
-    ): Promise<ISimpleResponse<{
+    ): Promise<IOrginaryResponse<{
         userStats: Omit<IUserStats, 'id' | 'password'>
         authToken: string
     }>>
@@ -67,13 +76,13 @@ export interface IApplicationFacade {
     } | null>
     replicateUser(
         newUserStats: INewUserStats
-    ): Promise<ISimpleResponse<IPerson>>
+    ): Promise<IOrginaryResponse<IPerson>>
 }
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
     async replicateUser(
         newUserStats: INewUserStats
-    ): Promise<ISimpleResponse<IPerson>> {
+    ): Promise<IOrginaryResponse<IPerson>> {
         const log = new SimpleLogger('replicate User', false).createLogger()
 
         console.log('>>> app::replicateuser : params:', newUserStats)
@@ -160,7 +169,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     async loginUser(
         userName: string,
         password: string
-    ): Promise<ISimpleResponse<{
+    ): Promise<IOrginaryResponse<{
         userStats: Omit<IUserStats, 'id' | 'password'>
         authToken: string
     }>> {
@@ -303,7 +312,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             IRequirementStatsType,
             'id' | 'deleted' | 'userId' | 'executed'
         > & { authToken: string }
-    ): Promise<ISimpleResponse<IPerson | null>> {
+    ): Promise<IOrginaryResponse<IPerson | null>> {
         const log = new SimpleLogger('APP::ADD USER REQUIREMENT').createLogger()
 
         log('starting ...')
@@ -416,7 +425,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return wallet
     }
 
-    
+
     async addUserAsync(
         username: string,
         password: string
