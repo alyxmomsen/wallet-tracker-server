@@ -25,19 +25,21 @@ import {
 } from './services/replication-service'
 import {
     IUsersPoolStorage,
-    UserPoolStoragee,
+    UserPoolStoragee as UserPoolStorage,
 } from './services/usersPoolStorage'
+import { WebServerDriver } from '../../web-server/app'
 
-export interface INewUserStats extends Omit<IUserStats, 'password' | 'id'> { token: string };
-
+export interface INewUserStats extends Omit<IUserStats, 'password' | 'id'> {
+    token: string
+}
 
 interface IGetPersonStatsResponse {
-        userData: Omit<IUserStats, 'password'> | null
-        details: {
-            code: number
-            description: string
-        }
+    userData: Omit<IUserStats, 'password'> | null
+    details: {
+        code: number
+        description: string
     }
+}
 
 export interface IApplicationFacade {
     addUserRequirement(
@@ -54,10 +56,12 @@ export interface IApplicationFacade {
     loginUser(
         userName: string,
         password: string
-    ): Promise<IOrginaryResponse<{
-        userStats: Omit<IUserStats, 'id' | 'password'>
-        authToken: string
-    }>>
+    ): Promise<
+        IOrginaryResponse<{
+            userStats: Omit<IUserStats, 'id' | 'password'>
+            authToken: string
+        }>
+    >
     getPersonByID(id: string): IPerson | null
     getUserById(id: string): Promise<IPerson | null>
     getPersonStatsByIdAsync(id: string): Promise<{
@@ -169,10 +173,12 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     async loginUser(
         userName: string,
         password: string
-    ): Promise<IOrginaryResponse<{
-        userStats: Omit<IUserStats, 'id' | 'password'>
-        authToken: string
-    }>> {
+    ): Promise<
+        IOrginaryResponse<{
+            userStats: Omit<IUserStats, 'id' | 'password'>
+            authToken: string
+        }>
+    > {
         const log = new SimpleLogger('login user', false).createLogger()
 
         const dataBaseResponse: TDatabaseResultStatus<Pick<IUserStats, 'id'>> =
@@ -187,8 +193,8 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                 payload: null,
                 status: {
                     code: 402,
-                    details:'details details'
-                }
+                    details: 'details details',
+                },
             }
         }
 
@@ -205,8 +211,8 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                 payload: null,
                 status: {
                     code: 402,
-                    details:'no user'
-                }
+                    details: 'no user',
+                },
             }
         }
 
@@ -218,18 +224,18 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return {
             payload: {
                 authToken: authToken,
-                userStats:{
-                createdTimeStamp: 0,
-                updatedTimeStamp: 0,
-                name: matchedUser.getUserName(),
-                requirements: matchedUser.getStats().requirements,
-                wallet: matchedUser.getWalletBalance(),
-            },
+                userStats: {
+                    createdTimeStamp: 0,
+                    updatedTimeStamp: 0,
+                    name: matchedUser.getUserName(),
+                    requirements: matchedUser.getStats().requirements,
+                    wallet: matchedUser.getWalletBalance(),
+                },
             },
             status: {
                 code: 200,
-                details:'OK , user userOK'
-            }
+                details: 'OK , user userOK',
+            },
         }
     }
 
@@ -425,7 +431,6 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return wallet
     }
 
-
     async addUserAsync(
         username: string,
         password: string
@@ -540,7 +545,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     ) {
         // this.webServer = webServerExpress;
 
-        this.usersPoolStorage = new UserPoolStoragee()
+        this.usersPoolStorage = new UserPoolStorage()
 
         const log = new SimpleLogger('app constructor', false).createLogger()
 
@@ -559,15 +564,19 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         )
 
         log(`>>> loading user pool...`)
-        this.dataBaseConnector.getAllPersons().then((usersData) => {
-            const requirementFactory: IRequirementCommandFactory =
-                new RequiremenCommandFactory()
+        this.dataBaseConnector
+            .getAllPersonsOnly()
+            .then((usersData) => {
+                const requirementFactory: IRequirementCommandFactory =
+                    new RequiremenCommandFactory()
 
-            log(`>>> users pool loaded`)
-            Promise.all(
-                usersData.map((user) => {
-                    return new Promise<{ description: string; subj: IPerson }>(
-                        (globalResolve) => {
+                log(`>>> users pool loaded`)
+                Promise.all(
+                    usersData.map((user) => {
+                        return new Promise<{
+                            description: string
+                            subj: IPerson
+                        }>((globalResolve) => {
                             const userId = user.id
                             const newUser = new OrdinaryPerson(
                                 user.name,
@@ -641,45 +650,51 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                                     subj: newUser,
                                 })
                             })
-                        }
-                    )
-                })
-            ).then((resolves) => {
-                resolves.forEach((elem) => {
-                    this.usersPoolStorage.addUser(elem.subj.getId(), elem.subj)
+                        })
+                    })
+                )
+                    .then((resolves) => {
+                        resolves.forEach((elem) => {
+                            this.usersPoolStorage.addUser(
+                                elem.subj.getId(),
+                                elem.subj
+                            )
 
-                    // this.usersPool.push(elem.subj)
-                })
+                            // this.usersPool.push(elem.subj)
+                        })
 
-                const log = new SimpleLogger(
-                    'users pool storage',
-                    false
-                ).createLogger()
+                        const log = new SimpleLogger(
+                            'users pool storage',
+                            false
+                        ).createLogger()
 
-                resolves.forEach((item) => {
-                    // const result = this.usersPoolStorage.addUser(item.subj.getId(), item.subj);
+                        resolves.forEach((item) => {
+                            // const result = this.usersPoolStorage.addUser(item.subj.getId(), item.subj);
 
-                    log(
-                        'user added into users pool storage. user name is : ' +
-                            item.subj.getUserName()
-                    )
-                })
+                            log(
+                                'user added into users pool storage. user name is : ' +
+                                    item.subj.getUserName()
+                            )
+                        })
 
-                log(`users pool is updated`.toUpperCase(), null, true)
+                        log(`users pool is updated`.toUpperCase(), null, true)
+                        const date = new Date();
+                        console.log(`users pool updated time: ${date.getMinutes()}:${date.getSeconds()}:${date.getMilliseconds()}`)
+                    })
+                    .finally(() => {
+                        
+
+                        const webServerDriver = new WebServerDriver(this)
+                        const date = new Date();
+                        console.log('http server getting started...' + `${date.getMinutes()}:${date.getSeconds()}:${date.getMilliseconds()}`);
+                        webServerDriver.start();
+
+                    })
+
+                log('app constructor is finished'.toUpperCase(), null, true)
             })
-
-            log('app constructor is finished'.toUpperCase(), null, true)
-        })
-
-        // this.webServer.
-
-        // this.webServer.use(cors());
-        // this.webServer.use(bodyParser());
-        // this.webServer.use(express.json());
-
-        // const port = 3030
-        // this.webServer.listen(port, () => {
-
-        // })
+            .finally(() => {
+                console.log('foo')
+            })
     }
 }

@@ -18,7 +18,7 @@ import {
     DocumentReference,
     updateDoc,
 } from 'firebase/firestore'
-import { TDBUserData, TUserData } from '../web-server/express'
+import { TUserData } from '../web-server/express'
 import { IRequirementStatsType } from '../core/src/types/commonTypes'
 import { SimpleLogger } from '../utils/SimpleLogger'
 import { IUserStats } from '../core/src/person/Person'
@@ -67,13 +67,18 @@ export interface IDataBaseConnector {
             Omit<IUserStats, 'password' | 'requirements' | 'wallet'>
         >
     >
-    getAllPersons(): Promise<Omit<TUserData, 'wallet'>[]>
+    getAllPersonsOnly(): Promise<TUserStats__1[]>
     getRequiremntsByUserId(userId: string): Promise<IRequirementStatsType[]>
     getPersonById(id: string): Promise<Omit<TUserData, 'wallet'> | null>
     getDataAsync(): Promise<any>
     getPersonWalletByUserId(id: string): Promise<TWalletData[]>
     updateUserData(userSubj: Omit<IUserStats, 'requirements'>): Promise<void>
 }
+
+export type TUserStats__1 = Omit<
+    IUserStats,
+    'wallet' | 'requirements' | 'password'
+>
 
 export type TDataBaseUser = {
     createdUnixDate: number
@@ -276,7 +281,7 @@ export class FirebaseConnector implements IDataBaseConnector {
         }
     }
 
-    async getAllPersons(): Promise<Omit<TUserData, 'wallet'>[]> {
+    async getAllPersonsOnly(): Promise<Omit<TUserData, 'wallet'>[]> {
         return await getAllFireStorePersonDocs('persons')
     }
 

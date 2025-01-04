@@ -1,5 +1,8 @@
 import { ApplicationSingletoneFacade } from './core/src/ApplicationFacade'
-import { AuthService, IAuthService } from './core/src/services/auth-service/AuthService'
+import {
+    AuthService,
+    IAuthService,
+} from './core/src/services/auth-service/AuthService'
 import { UserPersonFactory } from './core/src/factories/PersonFactory'
 import { FirebaseConnector } from './db/app'
 

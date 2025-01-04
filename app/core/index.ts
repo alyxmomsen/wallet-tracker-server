@@ -25,7 +25,8 @@ class AppCore {
 
 const app = new AppCore()
 
-const child = fork('../web-server/express.ts')
+
+// const child = fork('../web-server/express.ts')
 
 // child.on('message', (msg) => {
 //   console.log('Received from child:', msg);
@@ -50,7 +51,7 @@ async function startLoop() {
 
         const diff = now - lastTImeStamp
 
-        console.log('iteration' + ++i, diff)
+        // console.log('iteration' + ++i, diff)
 
         lastTImeStamp = now
 
