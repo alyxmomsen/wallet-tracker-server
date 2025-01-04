@@ -1,5 +1,5 @@
-import { IDataBaseConnector, TDatabaseResultStatus } from '../../../db/app'
-import { IUserStats } from '../person/Person'
+import { IDataBaseConnector, TDatabaseResultStatus } from '../../../../db/app'
+import { IUserStats } from '../../person/Person'
 
 export interface IAuthService {
     authUser(

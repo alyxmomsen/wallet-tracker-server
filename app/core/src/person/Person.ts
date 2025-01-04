@@ -3,11 +3,6 @@ import { IRequirementStatsType } from '../types/commonTypes'
 import { IWallet, IWallet as number, Wallet } from '../Wallet'
 import { GoingSleepStatus, IPersonStatusSystem } from './PersonStatus'
 
-export type TStatus = {
-    id: number
-    title: string
-}
-
 export type TWalletTrackValue = {
     valueAfter: number
     valueBefore: number

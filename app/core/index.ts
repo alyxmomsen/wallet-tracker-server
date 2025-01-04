@@ -4,7 +4,7 @@ import {
     IPersonFactory,
     UserPersonFactory,
 } from './src/factories/PersonFactory'
-import { AuthService } from './src/auth-service/AuthService'
+import { AuthService } from './src/services/auth-service/AuthService'
 import { FirebaseConnector, IDataBaseConnector } from '../db/app'
 
 class AppCore {

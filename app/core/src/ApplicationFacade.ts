@@ -6,7 +6,7 @@ import {
 import { IPersonFactory } from './factories/PersonFactory'
 import { IPerson, IUserStats, OrdinaryPerson } from './person/Person'
 
-import { TResponseJSONData } from '../../web-server/express'
+import { ISimpleResponse } from '../../web-server/express'
 
 import {
     IRequirementCommandFactory,
@@ -15,7 +15,7 @@ import {
 import {
     IAuthService,
     TAuthServiceCheckTokenResponse,
-} from './auth-service/AuthService'
+} from './services/auth-service/AuthService'
 import { IRequirementStatsType } from './types/commonTypes'
 import { SimpleLogger } from '../../utils/SimpleLogger'
 import { IJWTokenService, JWTokenService } from './services/jwt-token-service'
@@ -28,13 +28,15 @@ import {
     UserPoolStoragee,
 } from './services/usersPoolStorage'
 
+export interface INewUserStats extends Omit<IUserStats, 'password' | 'id'> { token: string };
+
 export interface IApplicationFacade {
     addUserRequirement(
         requirementFields: Omit<
             IRequirementStatsType,
             'id' | 'deleted' | 'userId' | 'executed'
         > & { authToken: string }
-    ): Promise<TResponseJSONData<IPerson | null>>
+    ): Promise<ISimpleResponse<IPerson | null>>
     deleteUserRequirement(requirementId: string, token: string): Promise<any>
     addUserAsync(
         username: string,
@@ -43,10 +45,10 @@ export interface IApplicationFacade {
     loginUser(
         userName: string,
         password: string
-    ): Promise<{
+    ): Promise<ISimpleResponse<{
         userStats: Omit<IUserStats, 'id' | 'password'>
         authToken: string
-    } | null>
+    }>>
     getPersonByID(id: string): IPerson | null
     getUserById(id: string): Promise<IPerson | null>
     getPersonStatsByIdAsync(id: string): Promise<{
@@ -64,14 +66,14 @@ export interface IApplicationFacade {
         authToken: string
     } | null>
     replicateUser(
-        newUserData: Omit<IUserStats, 'password' | 'id'> & { token: string }
-    ): Promise<TResponseJSONData<IPerson | null>>
+        newUserStats: INewUserStats
+    ): Promise<ISimpleResponse<IPerson>>
 }
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
     async replicateUser(
-        newUserStats: Omit<IUserStats, 'password' | 'id'> & { token: string }
-    ): Promise<TResponseJSONData<IPerson | null>> {
+        newUserStats: INewUserStats
+    ): Promise<ISimpleResponse<IPerson>> {
         const log = new SimpleLogger('replicate User', false).createLogger()
 
         console.log('>>> app::replicateuser : params:', newUserStats)
@@ -158,10 +160,10 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     async loginUser(
         userName: string,
         password: string
-    ): Promise<{
+    ): Promise<ISimpleResponse<{
         userStats: Omit<IUserStats, 'id' | 'password'>
         authToken: string
-    } | null> {
+    }>> {
         const log = new SimpleLogger('login user', false).createLogger()
 
         const dataBaseResponse: TDatabaseResultStatus<Pick<IUserStats, 'id'>> =
@@ -172,7 +174,13 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         const userData = dataBaseResponse.userData
 
         if (userData === null) {
-            return null
+            return {
+                payload: null,
+                status: {
+                    code: 402,
+                    details:'details details'
+                }
+            }
         }
 
         const userId = userData.id
@@ -184,7 +192,13 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         const matchedUser = this.usersPoolStorage.getUserById(userId)
 
         if (matchedUser === null) {
-            return null
+            return {
+                payload: null,
+                status: {
+                    code: 402,
+                    details:'no user'
+                }
+            }
         }
 
         const authToken = this.jsonWebTokenService.sign(
@@ -193,28 +207,20 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         )
 
         return {
-            authToken: authToken,
-            userStats: {
+            payload: {
+                authToken: authToken,
+                userStats:{
                 createdTimeStamp: 0,
                 updatedTimeStamp: 0,
                 name: matchedUser.getUserName(),
-                requirements: matchedUser
-                    .getAllReauirementCommands()
-                    .map((elem) => {
-                        return {
-                            transactionTypeCode: elem.getTransactionTypeCode(),
-                            dateToExecute: elem.getDateToExecute(),
-                            deleted: elem.getDeleted(),
-                            description: elem.getDescription(),
-                            id: elem.getId(),
-                            executed: elem.isExecuted(),
-                            title: elem.getTitle(),
-                            value: elem.getValue(),
-                            // executed:elem
-                        } as Omit<IRequirementStatsType, 'userId'>
-                    }),
+                requirements: matchedUser.getStats().requirements,
                 wallet: matchedUser.getWalletBalance(),
             },
+            },
+            status: {
+                code: 200,
+                details:'OK , user userOK'
+            }
         }
     }
 
@@ -297,7 +303,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             IRequirementStatsType,
             'id' | 'deleted' | 'userId' | 'executed'
         > & { authToken: string }
-    ): Promise<TResponseJSONData<IPerson | null>> {
+    ): Promise<ISimpleResponse<IPerson | null>> {
         const log = new SimpleLogger('APP::ADD USER REQUIREMENT').createLogger()
 
         log('starting ...')

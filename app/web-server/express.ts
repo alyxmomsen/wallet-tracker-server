@@ -49,7 +49,7 @@ webServerExpress.post('/update-user', async (req: Request, res: Response) => {
                     code: 403,
                     details: 'forbidden , wrong token data type',
                 },
-            } as TResponseJSONData<{ foo: 'bar' }>)
+            } as ISimpleResponse<{ foo: 'bar' }>)
 
             resolve()
         })
@@ -78,7 +78,7 @@ webServerExpress.post('/update-user', async (req: Request, res: Response) => {
                     code: 501,
                     details: 'internal error , or smth else',
                 },
-            } as TResponseJSONData<Omit<IUserStats, 'password'>>)
+            } as ISimpleResponse<Omit<IUserStats, 'password'>>)
 
             resolve()
         })
@@ -96,7 +96,7 @@ webServerExpress.post('/update-user', async (req: Request, res: Response) => {
                     code: 501,
                     details: 'internal error , or i dont know',
                 },
-            } as TResponseJSONData<Omit<IUserStats, 'password'>>)
+            } as ISimpleResponse<Omit<IUserStats, 'password'>>)
 
             resolve()
         })
@@ -108,7 +108,7 @@ webServerExpress.post('/update-user', async (req: Request, res: Response) => {
                 code: 200,
                 details: 'OK , user is updated',
             },
-        } as TResponseJSONData<Omit<IUserStats, 'password'>>)
+        } as ISimpleResponse<Omit<IUserStats, 'password'>>)
 
         resolve()
     })
@@ -187,7 +187,7 @@ webServerExpress.post(
             xAuth
         )
 
-        const responseData: TResponseJSONData<{ requirementId: string }> = {
+        const responseData: ISimpleResponse<{ requirementId: string }> = {
             payload: {
                 requirementId: 'test string',
             },
@@ -219,7 +219,7 @@ webServerExpress.post(
                         code: 1,
                         details: 'internal error',
                     },
-                } as TResponseJSONData<null>)
+                } as ISimpleResponse<null>)
                 resolve()
             })
         }
@@ -236,7 +236,7 @@ webServerExpress.post(
                         code: 2,
                         details: 'invalid token , probably',
                     },
-                } as TResponseJSONData<null>)
+                } as ISimpleResponse<null>)
                 resolve()
             })
         }
@@ -249,7 +249,7 @@ webServerExpress.post(
                         code: 1,
                         details: 'internal error',
                     },
-                } as TResponseJSONData<null>)
+                } as ISimpleResponse<null>)
                 resolve()
             })
         }
@@ -263,7 +263,7 @@ webServerExpress.post(
                 payload: {
                     token: payload.updatedToken,
                 },
-            } as TResponseJSONData<TCheckUserAuthResponseData>)
+            } as ISimpleResponse<TCheckUserAuthResponseData>)
             resolve()
         })
     }
@@ -289,7 +289,7 @@ webServerExpress.post(
                         code: 1,
                         details: 'details bla bla',
                     },
-                } as TResponseJSONData<null>)
+                } as ISimpleResponse<null>)
                 resolve()
             })
         }
@@ -305,7 +305,7 @@ webServerExpress.post(
                         code: 401,
                         details: 'Unauthorized',
                     },
-                } as TResponseJSONData<null>)
+                } as ISimpleResponse<null>)
                 resolve()
             })
         }
@@ -317,7 +317,7 @@ webServerExpress.post(
                     code: 0,
                     details: 'user data and auth token',
                 },
-            } as TResponseJSONData<{
+            } as ISimpleResponse<{
                 userStats: IUserStats
                 authToken: string
             }>)
@@ -342,7 +342,7 @@ webServerExpress.post(
                         code: 1,
                         details: 'no body object or smth wrong',
                     },
-                } as TResponseJSONData<null>)
+                } as ISimpleResponse<null>)
                 resolve()
             })
         }
@@ -355,7 +355,7 @@ webServerExpress.post(
                         code: 2,
                         details: 'no body object , body object is null',
                     },
-                } as TResponseJSONData<null>)
+                } as ISimpleResponse<null>)
                 resolve()
             })
         }
@@ -365,28 +365,34 @@ webServerExpress.post(
             requesBodyData.password
         )
 
-        if (responsedUserStatsData === null)
+        const responsePayload = responsedUserStatsData.payload;
+        const responseStatus = responsedUserStatsData.status;
+
+        if (responsePayload === null){
             return new Promise((resolve) => {
                 res.status(500).json({
                     payload: null,
                     status: {
-                        code: 3,
-                        details: 'user no logined',
+                        code: responseStatus.code,
+                        details: responseStatus.details,
                     },
-                } as TResponseJSONData<null>)
+                } as ISimpleResponse<null>)
                 resolve()
             })
+        }
+
+
         return new Promise((resolve) => {
             res.status(200).json({
                 payload: {
-                    authToken: responsedUserStatsData.authToken,
-                    userStats: responsedUserStatsData.userStats,
+                    authToken: responsePayload.authToken,
+                    userStats: responsePayload.userStats,
                 },
                 status: {
-                    code: 0,
-                    details: 'user data , you please',
+                    code: responseStatus.code,
+                    details: responseStatus.details,
                 },
-            } as TResponseJSONData<{
+            } as ISimpleResponse<{
                 userStats: IUserStats
                 authToken: string
             }>)
@@ -432,7 +438,7 @@ webServerExpress.post('/registration', async (req: Request, res: Response) => {
                     details: 'user alredy exists',
                 },
                 payload: null,
-            } as TResponseJSONData<TAuthUserData>)
+            } as ISimpleResponse<TAuthUserData>)
             resolve()
         })
     }
@@ -446,7 +452,7 @@ webServerExpress.post('/registration', async (req: Request, res: Response) => {
             payload: {
                 userId: userData?.id,
             },
-        } as TResponseJSONData<TAuthUserData>)
+        } as ISimpleResponse<TAuthUserData>)
         resolve()
     })
 })
@@ -474,7 +480,7 @@ webServerExpress.post(
                         code: 1,
                         details: 'internal error , no body',
                     },
-                } as TResponseJSONData<null>)
+                } as ISimpleResponse<null>)
                 resolve()
             })
         }
@@ -493,7 +499,7 @@ webServerExpress.post(
                         code: 2,
                         details: 'auth header data error',
                     },
-                } as TResponseJSONData<null>)
+                } as ISimpleResponse<null>)
                 resolve()
             })
         }
@@ -516,7 +522,7 @@ webServerExpress.post(
                             code: response.status.code,
                             details: response.status.details,
                         },
-                    } as TResponseJSONData<null>)
+                    } as ISimpleResponse<null>)
                     resolve()
                 })
             }
@@ -530,7 +536,7 @@ webServerExpress.post(
                         code: 0,
                         details: 'updated user data',
                     },
-                } as TResponseJSONData<IUserStats>)
+                } as ISimpleResponse<IUserStats>)
                 resolve()
             })
         } catch (error) {
@@ -543,7 +549,7 @@ webServerExpress.post(
                         code: 5,
                         details: error,
                     },
-                } as TResponseJSONData<null>)
+                } as ISimpleResponse<null>)
                 resolve()
             })
         }
@@ -562,7 +568,7 @@ function responseDataFactory<T>(
     responseData: T,
     statusCode: number,
     details: string = 'no details'
-): TResponseJSONData<T> {
+): ISimpleResponse<T> {
     return {
         payload: responseData,
         status: {
@@ -589,7 +595,7 @@ export type TDBUserData = {
 }
 
 // p - payload
-export type TResponseJSONData<P> = {
+export type ISimpleResponse<P> = {
     status: {
         code: number
         details: string
