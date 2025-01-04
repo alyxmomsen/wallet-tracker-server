@@ -1,25 +1,7 @@
 import { IRequirementCommand } from '../requirement-command/RequirementCommand'
-import { IRequirementStatsType } from '../types/commonTypes'
+import { IRequirementStatsType, IUserStats, TWalletTrackValue } from '../types/commonTypes'
 import { IWallet, IWallet as number, Wallet } from '../Wallet'
 import { GoingSleepStatus, IPersonStatusSystem } from './PersonStatus'
-
-export type TWalletTrackValue = {
-    valueAfter: number
-    valueBefore: number
-    value: number
-    executionDate: number
-    transactionTypeCode: number
-}
-
-export interface IUserStats {
-    name: string
-    wallet: number
-    id: string
-    requirements: Omit<IRequirementStatsType, 'userId'>[]
-    createdTimeStamp: number
-    updatedTimeStamp: number
-    password: string
-}
 
 export interface IPerson {
     update(): void

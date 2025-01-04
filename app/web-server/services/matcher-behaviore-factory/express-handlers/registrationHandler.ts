@@ -1,10 +1,10 @@
 import { Request, Response } from 'express'
-import { ApplicationSingletoneFacade } from '../../../core/src/ApplicationFacade'
+import { ApplicationSingletoneFacade } from '../../../../core/src/ApplicationFacade'
 import {
-    IOrginaryResponse,
+    IOrdinaryResponse,
     TAuthUserData,
     TRequestBodyType,
-} from '../../express'
+} from '../../../../core/src/types/commonTypes'
 
 export const registrationExpressHandler = async (
     app: ApplicationSingletoneFacade,
@@ -47,7 +47,7 @@ export const registrationExpressHandler = async (
                     details: 'user alredy exists',
                 },
                 payload: null,
-            } as IOrginaryResponse<TAuthUserData>)
+            } as IOrdinaryResponse<TAuthUserData>)
             resolve('')
         })
     }
@@ -61,7 +61,7 @@ export const registrationExpressHandler = async (
             payload: {
                 userId: userData?.id,
             },
-        } as IOrginaryResponse<TAuthUserData>)
+        } as IOrdinaryResponse<TAuthUserData>)
         resolve('')
     })
 }

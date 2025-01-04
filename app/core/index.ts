@@ -25,7 +25,6 @@ class AppCore {
 
 const app = new AppCore()
 
-
 // const child = fork('../web-server/express.ts')
 
 // child.on('message', (msg) => {
@@ -45,7 +44,6 @@ async function startLoop() {
     let run = true
     let i = 0
     let lastTImeStamp = Date.now()
-    setTimeout(() => (run = false), 3000)
     while (run) {
         const now = Date.now()
 

@@ -1,7 +1,6 @@
 import { Request, Response } from 'express'
-import { IOrginaryResponse } from '../../express'
-import { IUserStats } from '../../../core/src/person/Person'
-import { ApplicationSingletoneFacade } from '../../../core/src/ApplicationFacade'
+import { ApplicationSingletoneFacade } from '../../../../core/src/ApplicationFacade'
+import { IOrdinaryResponse, IUserStats } from '../../../../core/src/types/commonTypes'
 
 export async function getUserByUserNameAndPasswordHandler(
     app: ApplicationSingletoneFacade,
@@ -21,7 +20,7 @@ export async function getUserByUserNameAndPasswordHandler(
                     code: 1,
                     details: 'no body object or smth wrong',
                 },
-            } as IOrginaryResponse<null>)
+            } as IOrdinaryResponse<null>)
             resolve('')
         })
     }
@@ -34,7 +33,7 @@ export async function getUserByUserNameAndPasswordHandler(
                     code: 2,
                     details: 'no body object , body object is null',
                 },
-            } as IOrginaryResponse<null>)
+            } as IOrdinaryResponse<null>)
             resolve('')
         })
     }
@@ -55,7 +54,7 @@ export async function getUserByUserNameAndPasswordHandler(
                     code: responseStatus.code,
                     details: responseStatus.details,
                 },
-            } as IOrginaryResponse<null>)
+            } as IOrdinaryResponse<null>)
             resolve('')
         })
     }
@@ -70,7 +69,7 @@ export async function getUserByUserNameAndPasswordHandler(
                 code: responseStatus.code,
                 details: responseStatus.details,
             },
-        } as IOrginaryResponse<{
+        } as IOrdinaryResponse<{
             userStats: IUserStats
             authToken: string
         }>)

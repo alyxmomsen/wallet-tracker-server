@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
-import { ApplicationSingletoneFacade } from '../../../core/src/ApplicationFacade'
-import { IOrginaryResponse, TCheckUserAuthResponseData } from '../../express'
-import { SimpleLogger } from '../../../utils/SimpleLogger'
+import { ApplicationSingletoneFacade } from '../../../../core/src/ApplicationFacade'
+import { SimpleLogger } from '../../../../utils/SimpleLogger'
+import { IOrdinaryResponse } from '../../../../core/src/types/commonTypes'
 
 export async function deleeteUserRequirementExpressHandler(
     app: ApplicationSingletoneFacade,
@@ -76,7 +76,7 @@ export async function deleeteUserRequirementExpressHandler(
 
         const response = await app.deleteUserRequirement(requirementId, xAuth)
 
-        const responseData: IOrginaryResponse<{ requirementId: string }> = {
+        const responseData: IOrdinaryResponse<{ requirementId: string }> = {
             payload: {
                 requirementId: 'test string',
             },
@@ -97,7 +97,7 @@ function responseDataFactory<T>(
     responseData: T,
     statusCode: number,
     details: string = 'no details'
-): IOrginaryResponse<T> {
+): IOrdinaryResponse<T> {
     return {
         payload: responseData,
         status: {

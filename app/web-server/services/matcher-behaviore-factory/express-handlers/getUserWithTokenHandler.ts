@@ -1,12 +1,7 @@
 import { Request, Response } from 'express'
-import { ApplicationSingletoneFacade } from '../../../core/src/ApplicationFacade'
-import {
-    IOrginaryResponse,
-    TAuthUserData,
-    TRequestBodyType,
-} from '../../express'
-import { SimpleLogger } from '../../../utils/SimpleLogger'
-import { IPerson, IUserStats } from '../../../core/src/person/Person'
+import { ApplicationSingletoneFacade } from '../../../../core/src/ApplicationFacade'
+
+import { IOrdinaryResponse, IUserStats } from '../../../../core/src/types/commonTypes'
 
 export const getUserWithToken = async (
     app: ApplicationSingletoneFacade,
@@ -25,7 +20,7 @@ export const getUserWithToken = async (
                     code: 1,
                     details: 'details bla bla',
                 },
-            } as IOrginaryResponse<null>)
+            } as IOrdinaryResponse<null>)
             resolve('')
         })
     }
@@ -40,7 +35,7 @@ export const getUserWithToken = async (
                     code: 401,
                     details: 'Unauthorized',
                 },
-            } as IOrginaryResponse<null>)
+            } as IOrdinaryResponse<null>)
             resolve('')
         })
     }
@@ -52,7 +47,7 @@ export const getUserWithToken = async (
                 code: 0,
                 details: 'user data and auth token',
             },
-        } as IOrginaryResponse<{
+        } as IOrdinaryResponse<{
             userStats: IUserStats
             authToken: string
         }>)

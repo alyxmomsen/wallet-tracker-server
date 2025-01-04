@@ -1,12 +1,8 @@
 import {
     IDataBaseConnector,
-    TDatabaseResultStatus,
-    TWalletData,
 } from '../../db/app'
 import { IPersonFactory } from './factories/PersonFactory'
-import { IPerson, IUserStats, OrdinaryPerson } from './person/Person'
-
-import { IOrginaryResponse } from '../../web-server/express'
+import { IPerson, OrdinaryPerson } from './person/Person'
 
 import {
     IRequirementCommandFactory,
@@ -14,9 +10,9 @@ import {
 } from './requirement-command/factories/Requirement-command-factory'
 import {
     IAuthService,
-    TAuthServiceCheckTokenResponse,
+
 } from './services/auth-service/AuthService'
-import { IRequirementStatsType } from './types/commonTypes'
+import { INewUserStats, IOrdinaryResponse, IRequirementStatsType, IUserStats, TAuthServiceCheckTokenResponse, TDatabaseResultStatus, TWalletData } from './types/commonTypes'
 import { SimpleLogger } from '../../utils/SimpleLogger'
 import { IJWTokenService, JWTokenService } from './services/jwt-token-service'
 import {
@@ -29,17 +25,7 @@ import {
 } from './services/usersPoolStorage'
 import { WebServerDriver } from '../../web-server/app'
 
-export interface INewUserStats extends Omit<IUserStats, 'password' | 'id'> {
-    token: string
-}
 
-interface IGetPersonStatsResponse {
-    userData: Omit<IUserStats, 'password'> | null
-    details: {
-        code: number
-        description: string
-    }
-}
 
 export interface IApplicationFacade {
     addUserRequirement(
@@ -47,7 +33,7 @@ export interface IApplicationFacade {
             IRequirementStatsType,
             'id' | 'deleted' | 'userId' | 'executed'
         > & { authToken: string }
-    ): Promise<IOrginaryResponse<IPerson | null>>
+    ): Promise<IOrdinaryResponse<IPerson | null>>
     deleteUserRequirement(requirementId: string, token: string): Promise<any>
     addUserAsync(
         username: string,
@@ -57,7 +43,7 @@ export interface IApplicationFacade {
         userName: string,
         password: string
     ): Promise<
-        IOrginaryResponse<{
+        IOrdinaryResponse<{
             userStats: Omit<IUserStats, 'id' | 'password'>
             authToken: string
         }>
@@ -80,13 +66,13 @@ export interface IApplicationFacade {
     } | null>
     replicateUser(
         newUserStats: INewUserStats
-    ): Promise<IOrginaryResponse<IPerson>>
+    ): Promise<IOrdinaryResponse<IPerson>>
 }
 
 export class ApplicationSingletoneFacade implements IApplicationFacade {
     async replicateUser(
         newUserStats: INewUserStats
-    ): Promise<IOrginaryResponse<IPerson>> {
+    ): Promise<IOrdinaryResponse<IPerson>> {
         const log = new SimpleLogger('replicate User', false).createLogger()
 
         console.log('>>> app::replicateuser : params:', newUserStats)
@@ -174,7 +160,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         userName: string,
         password: string
     ): Promise<
-        IOrginaryResponse<{
+        IOrdinaryResponse<{
             userStats: Omit<IUserStats, 'id' | 'password'>
             authToken: string
         }>
@@ -318,7 +304,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             IRequirementStatsType,
             'id' | 'deleted' | 'userId' | 'executed'
         > & { authToken: string }
-    ): Promise<IOrginaryResponse<IPerson | null>> {
+    ): Promise<IOrdinaryResponse<IPerson | null>> {
         const log = new SimpleLogger('APP::ADD USER REQUIREMENT').createLogger()
 
         log('starting ...')
@@ -678,17 +664,19 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                         })
 
                         log(`users pool is updated`.toUpperCase(), null, true)
-                        const date = new Date();
-                        console.log(`users pool updated time: ${date.getMinutes()}:${date.getSeconds()}:${date.getMilliseconds()}`)
+                        const date = new Date()
+                        console.log(
+                            `users pool updated time: ${date.getMinutes()}:${date.getSeconds()}:${date.getMilliseconds()}`
+                        )
                     })
                     .finally(() => {
-                        
-
                         const webServerDriver = new WebServerDriver(this)
-                        const date = new Date();
-                        console.log('http server getting started...' + `${date.getMinutes()}:${date.getSeconds()}:${date.getMilliseconds()}`);
-                        webServerDriver.start();
-
+                        const date = new Date()
+                        console.log(
+                            'http server getting started...' +
+                                `${date.getMinutes()}:${date.getSeconds()}:${date.getMilliseconds()}`
+                        )
+                        webServerDriver.start()
                     })
 
                 log('app constructor is finished'.toUpperCase(), null, true)

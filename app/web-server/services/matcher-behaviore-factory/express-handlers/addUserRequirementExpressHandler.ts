@@ -1,12 +1,9 @@
 import { Request, Response } from 'express'
-import { ApplicationSingletoneFacade } from '../../../core/src/ApplicationFacade'
-import {
-    IOrginaryResponse,
-    TAuthUserData,
-    TRequestBodyType,
-} from '../../express'
-import { SimpleLogger } from '../../../utils/SimpleLogger'
-import { IPerson, IUserStats } from '../../../core/src/person/Person'
+import { ApplicationSingletoneFacade } from '../../../../core/src/ApplicationFacade'
+
+import { SimpleLogger } from '../../../../utils/SimpleLogger'
+import { IPerson } from '../../../../core/src/person/Person'
+import { IOrdinaryResponse, IUserStats } from '../../../../core/src/types/commonTypes'
 
 export const addUserRequirementsExpressHandler = async (
     app: ApplicationSingletoneFacade,
@@ -31,7 +28,7 @@ export const addUserRequirementsExpressHandler = async (
                     code: 1,
                     details: 'internal error , no body',
                 },
-            } as IOrginaryResponse<null>)
+            } as IOrdinaryResponse<null>)
             resolve('')
         })
     }
@@ -50,7 +47,7 @@ export const addUserRequirementsExpressHandler = async (
                     code: 2,
                     details: 'auth header data error',
                 },
-            } as IOrginaryResponse<null>)
+            } as IOrdinaryResponse<null>)
             resolve('')
         })
     }
@@ -73,7 +70,7 @@ export const addUserRequirementsExpressHandler = async (
                         code: response.status.code,
                         details: response.status.details,
                     },
-                } as IOrginaryResponse<null>)
+                } as IOrdinaryResponse<null>)
                 resolve('')
             })
         }
@@ -87,7 +84,7 @@ export const addUserRequirementsExpressHandler = async (
                     code: 0,
                     details: 'updated user data',
                 },
-            } as IOrginaryResponse<IUserStats>)
+            } as IOrdinaryResponse<IUserStats>)
             resolve('')
         })
     } catch (error) {
@@ -100,7 +97,7 @@ export const addUserRequirementsExpressHandler = async (
                     code: 5,
                     details: error,
                 },
-            } as IOrginaryResponse<null>)
+            } as IOrdinaryResponse<null>)
             resolve('')
         })
     }

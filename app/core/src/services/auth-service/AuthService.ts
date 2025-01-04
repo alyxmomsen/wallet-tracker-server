@@ -1,5 +1,5 @@
-import { IDataBaseConnector, TDatabaseResultStatus } from '../../../../db/app'
-import { IUserStats } from '../../person/Person'
+import { IDataBaseConnector } from '../../../../db/app'
+import { IUserStats, TAuthServiceCheckTokenResponse, TDatabaseResultStatus } from '../../types/commonTypes'
 
 export interface IAuthService {
     authUser(
@@ -9,13 +9,7 @@ export interface IAuthService {
     checkToken(token: string): TAuthServiceCheckTokenResponse
 }
 
-export type TAuthServiceCheckTokenResponse = {
-    payload: { updatedToken: string } | null
-    status: {
-        code: number
-        description: string
-    }
-}
+
 
 export class AuthService implements IAuthService {
     dataBaseConnector: IDataBaseConnector

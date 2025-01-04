@@ -1,6 +1,9 @@
 import { Request, Response } from 'express'
-import { ApplicationSingletoneFacade } from '../../../core/src/ApplicationFacade'
-import { IOrginaryResponse, TCheckUserAuthResponseData } from '../../express'
+import { ApplicationSingletoneFacade } from '../../../../core/src/ApplicationFacade'
+import {
+    IOrdinaryResponse,
+    TCheckUserAuthResponseData,
+} from '../../../../core/src/types/commonTypes'
 
 export const chckIfUserAuthExpressHandler = async (
     app: ApplicationSingletoneFacade,
@@ -19,7 +22,7 @@ export const chckIfUserAuthExpressHandler = async (
                     code: 1,
                     details: 'internal error',
                 },
-            } as IOrginaryResponse<null>)
+            } as IOrdinaryResponse<null>)
             resolve('')
         })
     }
@@ -36,7 +39,7 @@ export const chckIfUserAuthExpressHandler = async (
                     code: 2,
                     details: 'invalid token , probably',
                 },
-            } as IOrginaryResponse<null>)
+            } as IOrdinaryResponse<null>)
             resolve('')
         })
     }
@@ -49,7 +52,7 @@ export const chckIfUserAuthExpressHandler = async (
                     code: 1,
                     details: 'internal error',
                 },
-            } as IOrginaryResponse<null>)
+            } as IOrdinaryResponse<null>)
             resolve('')
         })
     }
@@ -63,7 +66,7 @@ export const chckIfUserAuthExpressHandler = async (
             payload: {
                 token: payload.updatedToken,
             },
-        } as IOrginaryResponse<TCheckUserAuthResponseData>)
+        } as IOrdinaryResponse<TCheckUserAuthResponseData>)
         resolve('')
     })
 }

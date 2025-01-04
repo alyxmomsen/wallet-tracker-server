@@ -3,14 +3,14 @@ const cors = require('cors')
 
 import express, { Express, Request, RequestHandler, Response } from 'express'
 import { Server } from 'http'
-import { getUserByUserNameAndPasswordHandler } from './services/matcher-behaviore-factory/getUserByUserNamePasswordFactory'
+import { getUserByUserNameAndPasswordHandler } from './services/matcher-behaviore-factory/express-handlers/getUserByUserNamePasswordFactory'
 import { ApplicationSingletoneFacade } from '../core/src/ApplicationFacade'
-import { updateUserExpressHandler } from './services/matcher-behaviore-factory/updateUserExpressHandler'
-import { deleeteUserRequirementExpressHandler } from './services/matcher-behaviore-factory/deleteUserRequirementExpressHandler'
-import { chckIfUserAuthExpressHandler as checkIfUserAuthExpressHandler } from './services/matcher-behaviore-factory/checkIfUserAuthExpressHandler'
-import { getUserWithToken } from './services/matcher-behaviore-factory/getUserWithTokenHandler'
-import { registrationExpressHandler } from './services/matcher-behaviore-factory/registrationHandler'
-import { addUserRequirementsExpressHandler } from './services/matcher-behaviore-factory/addUserRequirementExpressHandler'
+import { updateUserExpressHandler } from './services/matcher-behaviore-factory/express-handlers/updateUserExpressHandler'
+import { deleeteUserRequirementExpressHandler } from './services/matcher-behaviore-factory/express-handlers/deleteUserRequirementExpressHandler'
+import { chckIfUserAuthExpressHandler as checkIfUserAuthExpressHandler } from './services/matcher-behaviore-factory/express-handlers/checkIfUserAuthExpressHandler'
+import { getUserWithToken } from './services/matcher-behaviore-factory/express-handlers/getUserWithTokenHandler'
+import { registrationExpressHandler } from './services/matcher-behaviore-factory/express-handlers/registrationHandler'
+import { addUserRequirementsExpressHandler } from './services/matcher-behaviore-factory/express-handlers/addUserRequirementExpressHandler'
 
 const webServerExpress: Express = express()
 
@@ -19,7 +19,7 @@ export class WebServerDriver {
         const port: number = 3030
 
         this.httpServer = webServerExpress.listen(port, () => {
-            console.log('http server started on port : ' + port);
+            console.log('http server started on port : ' + port)
         })
     }
 

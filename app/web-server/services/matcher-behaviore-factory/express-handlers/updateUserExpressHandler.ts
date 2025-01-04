@@ -1,11 +1,12 @@
 import { Request, Response } from 'express'
+
+import { ApplicationSingletoneFacade } from '../../../../core/src/ApplicationFacade'
+import { SimpleLogger } from '../../../../utils/SimpleLogger'
 import {
-    IOrginaryResponse,
+    IOrdinaryResponse,
+    IUserStats,
     TUserStatsOmitPasswordOrdinaryResponse,
-} from '../../express'
-import { IUserStats } from '../../../core/src/person/Person'
-import { ApplicationSingletoneFacade } from '../../../core/src/ApplicationFacade'
-import { SimpleLogger } from '../../../utils/SimpleLogger'
+} from '../../../../core/src/types/commonTypes'
 
 export async function updateUserExpressHandler(
     app: ApplicationSingletoneFacade,
@@ -31,7 +32,7 @@ export async function updateUserExpressHandler(
                     code: 403,
                     details: 'forbidden , wrong token data type',
                 },
-            } as IOrginaryResponse<{ foo: 'bar' }>)
+            } as IOrdinaryResponse<{ foo: 'bar' }>)
 
             resolve('')
         })

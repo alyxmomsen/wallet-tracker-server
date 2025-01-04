@@ -18,10 +18,9 @@ import {
     DocumentReference,
     updateDoc,
 } from 'firebase/firestore'
-import { TUserData } from '../web-server/express'
-import { IRequirementStatsType } from '../core/src/types/commonTypes'
+import { IRequirementStatsType, IUserStats, TDatabaseResultStatus, TUserData, TUserStats__1, TWalletData } from '../core/src/types/commonTypes'
 import { SimpleLogger } from '../utils/SimpleLogger'
-import { IUserStats } from '../core/src/person/Person'
+
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -45,11 +44,7 @@ const db = getFirestore(app)
 
 /* data base connector */
 
-export type TDatabaseResultStatus<T> = {
-    status: boolean
-    message: string
-    userData: T | null
-}
+
 
 export interface IDataBaseConnector {
     addUserRequirement(
@@ -75,40 +70,7 @@ export interface IDataBaseConnector {
     updateUserData(userSubj: Omit<IUserStats, 'requirements'>): Promise<void>
 }
 
-export type TUserStats__1 = Omit<
-    IUserStats,
-    'wallet' | 'requirements' | 'password'
->
 
-export type TDataBaseUser = {
-    createdUnixDate: number
-    password: string
-    username: string
-    userId: string
-}
-
-export type TRequrementsDataBaseType = {
-    dateToExecute: number
-    description: string
-    title: string
-    userId: string
-    value: number
-    cashFlowDirectionCode: number
-}
-
-export type TWalletData = {
-    walletId: string
-    balance: number
-    title: string
-    description: string
-}
-
-export type TWalletDBData = {
-    userId: string
-    balance: number
-    title: string
-    description: string
-}
 
 export class FirebaseConnector implements IDataBaseConnector {
     async updateUserData(
@@ -164,8 +126,8 @@ export class FirebaseConnector implements IDataBaseConnector {
             if (walletDocSnap.exists()) {
                 const walletId = walletDocSnap.id
 
-                const { userId, balance, description, title } =
-                    walletDocSnap.data() as TWalletDBData
+                const { balance, description, title } =
+                    walletDocSnap.data() as TWalletData
 
                 walletsPool.push({
                     balance,
