@@ -416,43 +416,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         return wallet
     }
 
-    // getPersonRequirementsAsync(id: string): IRequirementStatsType[] {
-    //     const userById = this.usersPoolStorage.getUserById(id)
-
-    //     if (userById === null) {
-    //         return []
-    //     }
-
-    //     const requirements: IRequirementStatsType[] = userById.getStats().requirements;
-    //         // .getAllReauirementCommands()
-    //         // .map((requirement) => {
-    //         //     const dateToExecute = requirement.getDateToExecute()
-    //         //     const description = requirement.getDescription()
-    //         //     const executed = requirement.isExecuted()
-    //         //     const title = requirement.getTitle()
-    //         //     const cashFlowDirectionCode =
-    //         //         requirement.getTransactionTypeCode()
-    //         //     const value = requirement.getValue()
-    //         //     const id = requirement.getId()
-
-    //         //     return {
-    //         //         dateToExecute,
-    //         //         description,
-    //         //         cashFlowDirectionCode,
-    //         //         id,
-    //         //         title,
-    //         //         value,
-    //         //         userId: userById.getId(),
-    //         //         executed,
-    //         //         deleted: false,
-    //         //         createdTimeStamp: requirement.getCreatedTimeStamp(),
-    //         //         updatedTimeStamp: requirement.getUpdatedTimeStamp(),
-    //         //     }
-    //         // })
-
-    //     return requirements
-    // }
-
+    
     async addUserAsync(
         username: string,
         password: string
