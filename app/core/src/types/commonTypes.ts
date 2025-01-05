@@ -1,4 +1,3 @@
-
 export interface IRequirementStatsType {
     createdTimeStamp: number
     updatedTimeStamp: number

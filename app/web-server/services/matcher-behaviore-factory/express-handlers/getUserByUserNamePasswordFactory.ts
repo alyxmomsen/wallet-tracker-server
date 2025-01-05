@@ -1,12 +1,17 @@
 import { Request, Response } from 'express'
 import { ApplicationSingletoneFacade } from '../../../../core/src/ApplicationFacade'
-import { IOrdinaryResponse, IUserStats } from '../../../../core/src/types/commonTypes'
+import {
+    IOrdinaryResponse,
+    IUserStats,
+} from '../../../../core/src/types/commonTypes'
 
 export async function getUserByUserNameAndPasswordHandler(
     app: ApplicationSingletoneFacade,
     req: Request,
     res: Response
 ) {
+    console.log('get user by password and username')
+
     const requesBodyData = req.body as
         | { userName: string; password: string }
         | null
@@ -42,6 +47,8 @@ export async function getUserByUserNameAndPasswordHandler(
         requesBodyData.userName,
         requesBodyData.password
     )
+
+    console.log(responsedUserStatsData, requesBodyData)
 
     const responsePayload = responsedUserStatsData.payload
     const responseStatus = responsedUserStatsData.status

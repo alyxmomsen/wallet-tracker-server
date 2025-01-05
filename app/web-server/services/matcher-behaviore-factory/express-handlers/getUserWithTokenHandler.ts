@@ -1,7 +1,10 @@
 import { Request, Response } from 'express'
 import { ApplicationSingletoneFacade } from '../../../../core/src/ApplicationFacade'
 
-import { IOrdinaryResponse, IUserStats } from '../../../../core/src/types/commonTypes'
+import {
+    IOrdinaryResponse,
+    IUserStats,
+} from '../../../../core/src/types/commonTypes'
 
 export const getUserWithToken = async (
     app: ApplicationSingletoneFacade,

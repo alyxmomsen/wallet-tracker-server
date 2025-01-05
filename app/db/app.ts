@@ -18,9 +18,15 @@ import {
     DocumentReference,
     updateDoc,
 } from 'firebase/firestore'
-import { IRequirementStatsType, IUserStats, TDatabaseResultStatus, TUserData, TUserStats__1, TWalletData } from '../core/src/types/commonTypes'
+import {
+    IRequirementStatsType,
+    IUserStats,
+    TDatabaseResultStatus,
+    TUserData,
+    TUserStats__1,
+    TWalletData,
+} from '../core/src/types/commonTypes'
 import { SimpleLogger } from '../utils/SimpleLogger'
-
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -44,8 +50,6 @@ const db = getFirestore(app)
 
 /* data base connector */
 
-
-
 export interface IDataBaseConnector {
     addUserRequirement(
         data: Omit<IRequirementStatsType, 'id' | 'deleted' | 'executed'>
@@ -67,39 +71,44 @@ export interface IDataBaseConnector {
     getPersonById(id: string): Promise<Omit<TUserData, 'wallet'> | null>
     getDataAsync(): Promise<any>
     getPersonWalletByUserId(id: string): Promise<TWalletData[]>
-    updateUserOnly(userSubj: Omit<IUserStats, 'requirements'|'password'>): Promise<void>
-    updateRequirements(userId:string ,requriremnts:Omit<IRequirementStatsType , 'userId'>[]):Promise<any>
+    updateUserOnly(
+        userSubj: Omit<IUserStats, 'requirements' | 'password'>
+    ): Promise<void>
+    updateRequirements(
+        userId: string,
+        requriremnts: Omit<IRequirementStatsType, 'userId'>[]
+    ): Promise<any>
 }
 
 export class FirebaseConnector implements IDataBaseConnector {
-    async updateRequirements(userId: string, requriremnts: Omit<IRequirementStatsType, 'userId'>[]): Promise<any> {
+    async updateRequirements(
+        userId: string,
+        requriremnts: Omit<IRequirementStatsType, 'userId'>[]
+    ): Promise<any> {
         requriremnts.forEach(async (elem) => {
+            const docRef = doc(db, 'requirements', elem.id)
 
-            const docRef = doc(db, 'requirements', elem.id);
-            
-            const fields: Omit<IRequirementStatsType  ,'userId'> = {
+            const fields: Omit<IRequirementStatsType, 'userId'> = {
                 createdTimeStamp: elem.createdTimeStamp,
                 dateToExecute: elem.dateToExecute,
                 deleted: elem.deleted,
                 description: elem.description,
                 executed: elem.executed,
                 id: elem.id,
-                title: elem.title, 
+                title: elem.title,
                 transactionTypeCode: elem.transactionTypeCode,
                 updatedTimeStamp: Date.now(),
-                value:elem.value  ,
+                value: elem.value,
             }
 
             const response = await updateDoc(docRef, {
-                ...fields
-            });
-
-
-        });
+                ...fields,
+            })
+        })
     }
 
     async updateUserOnly(
-        userSubj: Omit<IUserStats, 'requirements'  |  'password'>
+        userSubj: Omit<IUserStats, 'requirements' | 'password'>
     ): Promise<void> {
         const docRef = doc(db, 'persons', userSubj.id)
 

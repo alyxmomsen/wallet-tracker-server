@@ -3,7 +3,10 @@ import { ApplicationSingletoneFacade } from '../../../../core/src/ApplicationFac
 
 import { SimpleLogger } from '../../../../utils/SimpleLogger'
 import { IPerson } from '../../../../core/src/person/Person'
-import { IOrdinaryResponse, IUserStats } from '../../../../core/src/types/commonTypes'
+import {
+    IOrdinaryResponse,
+    IUserStats,
+} from '../../../../core/src/types/commonTypes'
 
 export const addUserRequirementsExpressHandler = async (
     app: ApplicationSingletoneFacade,

@@ -1,6 +1,4 @@
-import {
-    IDataBaseConnector,
-} from '../../db/app'
+import { IDataBaseConnector } from '../../db/app'
 import { IPersonFactory } from './factories/PersonFactory'
 import { IPerson, OrdinaryPerson } from './person/Person'
 
@@ -8,11 +6,16 @@ import {
     IRequirementCommandFactory,
     RequiremenCommandFactory,
 } from './requirement-command/factories/Requirement-command-factory'
+import { IAuthService } from './services/auth-service/AuthService'
 import {
-    IAuthService,
-
-} from './services/auth-service/AuthService'
-import { INewUserStats, IOrdinaryResponse, IRequirementStatsType, IUserStats, TAuthServiceCheckTokenResponse, TDatabaseResultStatus, TWalletData } from './types/commonTypes'
+    INewUserStats,
+    IOrdinaryResponse,
+    IRequirementStatsType,
+    IUserStats,
+    TAuthServiceCheckTokenResponse,
+    TDatabaseResultStatus,
+    TWalletData,
+} from './types/commonTypes'
 import { SimpleLogger } from '../../utils/SimpleLogger'
 import { IJWTokenService, JWTokenService } from './services/jwt-token-service'
 import {
@@ -25,8 +28,7 @@ import {
 } from './services/usersPoolStorage'
 import { WebServerDriver } from '../../web-server/app'
 import { Observer } from './Observer'
-
-
+import { Wallet } from './Wallet'
 
 export interface IApplicationFacade {
     addUserRequirement(
@@ -147,10 +149,14 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         theUser.setWalletValue(newUserStats.wallet)
 
         await this.dataBaseConnector.updateUserOnly({
-            ...newUserStats , id:jwtVerifyResult.value
+            ...newUserStats,
+            id: jwtVerifyResult.value,
         })
 
-        await this.dataBaseConnector.updateRequirements(jwtVerifyResult.value ,  newUserStats.requirements);
+        await this.dataBaseConnector.updateRequirements(
+            jwtVerifyResult.value,
+            newUserStats.requirements
+        )
 
         log('updated user data :::')
 
@@ -176,6 +182,8 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
 
         const dataBaseResponse: TDatabaseResultStatus<Pick<IUserStats, 'id'>> =
             await this.dataBaseConnector.getPersonByFields(userName, password)
+
+        console.log('dataBaseResponse', dataBaseResponse)
 
         /* -------------------------- */
 
@@ -552,148 +560,88 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
             'connecting to data base started at ' +
                 new Date().toLocaleTimeString()
         )
+        ;(async function (app: ApplicationSingletoneFacade) {
+            console.log('check 0')
+            const response = await app.dataBaseConnector.getAllPersonsOnly()
 
-        log(`>>> loading user pool...`)
-        this.dataBaseConnector
-            .getAllPersonsOnly()
-            .then((usersData) => {
-                const requirementFactory: IRequirementCommandFactory =
-                    new RequiremenCommandFactory()
+            console.log('check 1', response)
 
-                log(`>>> users pool loaded`)
-                Promise.all(
-                    usersData.map((user) => {
-                        return new Promise<{
-                            description: string
-                            subj: IPerson
-                        }>((globalResolve) => {
-                            const userId = user.id
-                            const newUser = new OrdinaryPerson(
-                                user.name,
-                                0,
-                                userId,
-                                user.updatedTimeStamp,
-                                user.createdTimeStamp
+            const requirementFactory = new RequiremenCommandFactory()
+
+            await Promise.all(
+                response.map((userStats) => {
+                    return new Promise(async (res) => {
+                        const date = new Date()
+
+                        const userWalletStats =
+                            await app.dataBaseConnector.getPersonWalletByUserId(
+                                userStats.id
                             )
 
-                            Promise.all([
-                                new Promise((resolve) => {
-                                    log(
-                                        `>>> getting user "${user.name}" wallet...`
-                                    )
-                                    dataBaseConnector
-                                        .getPersonWalletByUserId(userId)
-                                        .then((wallets) => {
-                                            if (wallets.length) {
-                                                const {
-                                                    balance,
-                                                    description,
-                                                    title,
-                                                    walletId,
-                                                } = wallets[0]
+                        const walletBalance: number =
+                            userWalletStats.length > 0
+                                ? typeof userWalletStats[0].balance !== 'number'
+                                    ? 0
+                                    : userWalletStats[0].balance
+                                : 0
 
-                                                newUser.incrementWallet(balance)
-                                            }
-                                            log(
-                                                `>>> ${user.name} user wallet is updated`
-                                            )
-                                            resolve('foo')
-                                        })
-                                }),
-                                new Promise((resolve) => {
-                                    log(
-                                        `>>> getting ${user.name} requirements...`
-                                    )
-                                    dataBaseConnector
-                                        .getRequiremntsByUserId(userId)
-                                        .then((response) => {
-                                            response.forEach(
-                                                (requirementFields) => {
-                                                    const requirement =
-                                                        requirementFactory.create(
-                                                            {
-                                                                ...requirementFields,
-                                                            }
-                                                        )
+                        const person = new OrdinaryPerson(
+                            userStats.name,
+                            walletBalance,
+                            userStats.id,
+                            userStats.updatedTimeStamp,
+                            userStats.createdTimeStamp
+                        )
 
-                                                    if (requirement) {
-                                                        newUser.addRequirementCommand(
-                                                            requirement
-                                                        )
-                                                    } else {
-                                                        console.log(
-                                                            '>>> APP::CONSTRUCTOR >>> requirement creating is FAIL'
-                                                        )
-                                                    }
-                                                }
-                                            )
-                                            log(
-                                                `${user.name} requirement is updated`
-                                            )
-                                            resolve('bar')
-                                        })
-                                }),
-                            ]).then((resolves) => {
-                                log(`>>> user data downloading is complete`)
-                                globalResolve({
-                                    description: 'global resolver',
-                                    subj: newUser,
-                                })
-                            })
-                        })
-                    })
-                )
-                    .then((resolves) => {
-                        resolves.forEach((elem) => {
-                            this.usersPoolStorage.addUser(
-                                elem.subj.getId(),
-                                elem.subj
-
+                        const requirementsStats =
+                            await app.dataBaseConnector.getRequiremntsByUserId(
+                                userStats.id
                             )
 
-                            elem.subj.onUserUpdate(() => {
-                                for (let i = 0; i < 10; i++) {
-                                    console.log('hello fuck world');
-                                }
+                        requirementsStats.forEach((item) => {
+                            const transaction = requirementFactory.create({
+                                createdTimeStamp: item.createdTimeStamp,
+                                dateToExecute: item.dateToExecute,
+                                deleted: item.deleted,
+                                description: item.description,
+                                executed: item.executed,
+                                id: item.id,
+                                title: item.title,
+                                transactionTypeCode: item.transactionTypeCode,
+                                updatedTimeStamp: item.updatedTimeStamp,
+                                userId: item.userId,
+                                value: item.value,
                             })
 
-                            
+                            if (transaction !== null) {
+                                person.addRequirementCommand(transaction)
+                            }
                         })
 
-                        const log = new SimpleLogger(
-                            'users pool storage',
-                            false
-                        ).createLogger()
+                        app.usersPoolStorage.addUser(person.getId(), person)
 
-                        resolves.forEach((item) => {
-                            // const result = this.usersPoolStorage.addUser(item.subj.getId(), item.subj);
+                        console.log('users pool: ', app.usersPoolStorage)
 
-                            log(
-                                'user added into users pool storage. user name is : ' +
-                                    item.subj.getUserName()
-                            )
-                        })
-
-                        log(`users pool is updated`.toUpperCase(), null, true)
-                        const date = new Date()
                         console.log(
-                            `users pool updated time: ${date.getMinutes()}:${date.getSeconds()}:${date.getMilliseconds()}`
+                            `${date.getFullYear()} ${date.getMonth()} ${date.getDate()} :: ${date.getTime()}`
                         )
-                    })
-                    .finally(() => {
-                        const webServerDriver = new WebServerDriver(this)
-                        const date = new Date()
-                        console.log(
-                            'http server getting started...' +
-                                `${date.getMinutes()}:${date.getSeconds()}:${date.getMilliseconds()}`
-                        )
-                        webServerDriver.start()
-                    })
 
-                log('app constructor is finished'.toUpperCase(), null, true)
-            })
-            .finally(() => {
-                console.log('foo')
-            })
+                        res('resolved')
+                    })
+                })
+            )
+
+            console.log(app)
+
+            console.log('check 2')
+
+            const httpServerDriver = new WebServerDriver(app)
+
+            console.log('check 3')
+
+            httpServerDriver.start()
+
+            console.log('check 4')
+        })(this)
     }
 }
