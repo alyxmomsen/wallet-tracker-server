@@ -67,19 +67,44 @@ export interface IDataBaseConnector {
     getPersonById(id: string): Promise<Omit<TUserData, 'wallet'> | null>
     getDataAsync(): Promise<any>
     getPersonWalletByUserId(id: string): Promise<TWalletData[]>
-    updateUserData(userSubj: Omit<IUserStats, 'requirements'>): Promise<void>
+    updateUserOnly(userSubj: Omit<IUserStats, 'requirements'|'password'>): Promise<void>
+    updateRequirements(userId:string ,requriremnts:Omit<IRequirementStatsType , 'userId'>[]):Promise<any>
 }
 
-
-
 export class FirebaseConnector implements IDataBaseConnector {
-    async updateUserData(
-        userSubj: Omit<IUserStats, 'requirements'>
+    async updateRequirements(userId: string, requriremnts: Omit<IRequirementStatsType, 'userId'>[]): Promise<any> {
+        requriremnts.forEach(async (elem) => {
+
+            const docRef = doc(db, 'requirements', elem.id);
+            
+            const fields: Omit<IRequirementStatsType  ,'userId'> = {
+                createdTimeStamp: elem.createdTimeStamp,
+                dateToExecute: elem.dateToExecute,
+                deleted: elem.deleted,
+                description: elem.description,
+                executed: elem.executed,
+                id: elem.id,
+                title: elem.title, 
+                transactionTypeCode: elem.transactionTypeCode,
+                updatedTimeStamp: Date.now(),
+                value:elem.value  ,
+            }
+
+            const response = await updateDoc(docRef, {
+                ...fields
+            });
+
+
+        });
+    }
+
+    async updateUserOnly(
+        userSubj: Omit<IUserStats, 'requirements'  |  'password'>
     ): Promise<void> {
         const docRef = doc(db, 'persons', userSubj.id)
 
         await updateDoc(docRef, {
-            name: userSubj.id,
+            name: userSubj.name,
             wallet: userSubj.wallet,
         } as Omit<IUserStats, 'id' | 'requirements'>)
     }

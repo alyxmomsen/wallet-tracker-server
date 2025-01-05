@@ -2,6 +2,7 @@ import { IRequirementCommand } from '../requirement-command/RequirementCommand'
 import { IRequirementStatsType, IUserStats, TWalletTrackValue } from '../types/commonTypes'
 import { IWallet, IWallet as number, Wallet } from '../Wallet'
 import { GoingSleepStatus, IPersonStatusSystem } from './PersonStatus'
+import { INotificationService, NotifycationService } from './services/notificationService'
 
 export interface IPerson {
     update(): void
@@ -23,9 +24,15 @@ export interface IPerson {
     getUpdatedTimeStamp(): number
     setWalletValue(value: number): boolean
     getStats(): Omit<IUserStats, 'password'>
+    onUserUpdate(cb:() => any): any;
 }
 
 export abstract class Person implements IPerson {
+
+    onUserUpdate(cb: () => any) {
+        this.notificator.set({reason:'updated' , cb});
+    }
+    
     getStats(): Omit<IUserStats, 'password'> {
         const userStats: Omit<IUserStats, 'password'> = {
             createdTimeStamp: this.getCreatedTimeStamp(),
@@ -108,6 +115,8 @@ export abstract class Person implements IPerson {
     ): IRequirementCommand | null {
         this.requirementTransactionCommandsPool.push(requirementCommand)
 
+        this.notificator.round('updated');
+
         return requirementCommand
     }
 
@@ -185,6 +194,7 @@ export abstract class Person implements IPerson {
         this.updateStatus = 0
         this.createdTimeStamp = createdTimeStamp
         this.updatedTimeStamp = updatedTimeStamp
+        this.notificator = new NotifycationService();
     }
 
     private id: string
@@ -196,6 +206,7 @@ export abstract class Person implements IPerson {
     protected averageSpending: number
     protected status: IPersonStatusSystem
     protected updateStatus: number
+    protected notificator: INotificationService;
 }
 
 export class OrdinaryPerson extends Person {

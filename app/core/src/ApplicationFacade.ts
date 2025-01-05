@@ -24,6 +24,7 @@ import {
     UserPoolStoragee as UserPoolStorage,
 } from './services/usersPoolStorage'
 import { WebServerDriver } from '../../web-server/app'
+import { Observer } from './Observer'
 
 
 
@@ -144,6 +145,12 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
         })
 
         theUser.setWalletValue(newUserStats.wallet)
+
+        await this.dataBaseConnector.updateUserOnly({
+            ...newUserStats , id:jwtVerifyResult.value
+        })
+
+        await this.dataBaseConnector.updateRequirements(jwtVerifyResult.value ,  newUserStats.requirements);
 
         log('updated user data :::')
 
@@ -404,10 +411,7 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
     }
 
     checkUserAuth(id: string): TAuthServiceCheckTokenResponse {
-        // this
-
         const response = this.authService.checkToken(id)
-
         return response
     }
 
@@ -644,9 +648,16 @@ export class ApplicationSingletoneFacade implements IApplicationFacade {
                             this.usersPoolStorage.addUser(
                                 elem.subj.getId(),
                                 elem.subj
+
                             )
 
-                            // this.usersPool.push(elem.subj)
+                            elem.subj.onUserUpdate(() => {
+                                for (let i = 0; i < 10; i++) {
+                                    console.log('hello fuck world');
+                                }
+                            })
+
+                            
                         })
 
                         const log = new SimpleLogger(
