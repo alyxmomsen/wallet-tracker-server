@@ -83,18 +83,11 @@ export class WebServerDriver {
             }
         )
 
-        this.expressServer.get(
-            '/',
-            (req: Request, res: Response) => {
+        this.expressServer.get('/', (req: Request, res: Response) => {
+            // console.log(req.query);
 
-                // console.log(req.query);
-
-                res.status(200).json({hello:'friend'});
-            }
-        )
+            res.status(200).json({ hello: 'friend' })
+        })
         // this.expressServer.post('/update-user' , () => {});
     }
 }
-
-
-

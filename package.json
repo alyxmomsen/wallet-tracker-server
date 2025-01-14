@@ -10,9 +10,8 @@
         "pretty": "npx prettier --write .",
         "pretty-cmt": "npx prettier --write . && git add . && git commit -m \"update\" && git status",
         "pretty-cmt-push": "npx prettier --write . && git add . && git commit -m \"update\"",
-        "compile": "npx tsc",
-        "serve": "npx tsc && node ./app/web-server/express.js",
-        "start": "npx tsc && node ./app/core/index.js",
+        "build": "prettier --write . && tsc",
+        "start": "npx tsc && bun ./dist/index.js",
         "pretty-and-serve": "npx prettier --write . && npx tsc &&  node ./app/web-server/express.js"
     },
     "keywords": [],

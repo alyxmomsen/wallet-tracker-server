@@ -1,3 +1,3 @@
 export interface ISimpleService {
-    exec(): void;
+    exec(): void
 }
